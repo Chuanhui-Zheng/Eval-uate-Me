@@ -1,0 +1,22 @@
+name = "calculator-demo"
+dataset = "cases.jsonl"
+plugins = ["demo_plugin"]   # not needed once the package is pip-installed (entry points)
+
+[target]
+type = "calculator"
+# bug_div_zero = true       # flip this to see compare flag a regression
+
+[[graders]]
+type = "numeric_close"
+
+[[graders]]
+type = "tool_use"
+required = ["calc"]
+
+[[graders]]
+type = "max_steps"
+limit = 3
+
+[run]
+repeats = 2
+output_dir = "runs"

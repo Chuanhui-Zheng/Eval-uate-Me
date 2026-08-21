@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evalharness-demo-plugin"
+version = "0.1.0"
+description = "Example plugin: a toy calculator agent as an eval target"
+requires-python = ">=3.11"
+dependencies = ["evalharness"]
+
+# Installing this package makes the plugin visible to `evalharness` with no config change.
+[project.entry-points."evalharness.targets"]
+calculator = "demo_plugin:CalculatorTarget"
+
+[project.entry-points."evalharness.graders"]
+numeric_close = "demo_plugin:NumericClose"
+
+[tool.setuptools]
+packages = ["demo_plugin"]

@@ -1,0 +1,5 @@
+{"id": "add", "input": "2 + 3", "expected": 5, "metadata": {"tags": ["arithmetic"]}}
+{"id": "mul", "input": "12 * 3", "expected": 36, "metadata": {"tags": ["arithmetic"]}}
+{"id": "float", "input": "0.1 + 0.2", "expected": 0.3, "metadata": {"tags": ["arithmetic", "float"]}}
+{"id": "div-zero", "input": "1 / 0", "expected": "undefined", "metadata": {"tags": ["edge"]}}
+{"id": "unparseable", "input": "two plus three", "expected": 5, "metadata": {"tags": ["edge", "expected-to-error"]}}
