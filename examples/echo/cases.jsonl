@@ -1,0 +1,3 @@
+{"id": "hello", "input": "hello", "expected": "hello"}
+{"id": "number", "input": 42, "expected": 42}
+{"id": "should-fail", "input": "a", "expected": "b"}
