@@ -1,0 +1,72 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, python: "3.11"}
+          - {os: ubuntu-latest, python: "3.12"}
+          - {os: windows-latest, python: "3.11"}
+          - {os: windows-latest, python: "3.12"}
+          - {os: macos-latest, python: "3.12"}
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+      - if: runner.os == 'Linux' && matrix.python == '3.12'
+        name: Type check and coverage floor
+        run: |
+          mypy
+          pytest -q --cov=evalharness
+      # The harness gating itself: the demo target must keep passing 60%+ of its cases
+      # (one case is expected to error), otherwise the job fails.
+      - if: runner.os == 'Linux'
+        run: PYTHONPATH=examples/plugin_demo evalharness run examples/plugin_demo/eval.toml --fail-under 0.6
+      # Validate the eval itself: graders must discriminate, dataset must lint cleanly enough to run.
+      - if: runner.os == 'Linux'
+        run: PYTHONPATH=examples/plugin_demo evalharness selftest examples/plugin_demo/eval.toml
+      - if: runner.os == 'Linux'
+        run: PYTHONPATH=examples/plugin_demo evalharness lint examples/plugin_demo/eval.toml
+      - if: runner.os == 'Linux'
+        run: PYTHONPATH=examples/cve_triage evalharness lint examples/cve_triage/eval.toml --strict
+      - if: runner.os == 'Linux'
+        run: PYTHONPATH=examples/cve_triage evalharness selftest examples/cve_triage/eval.toml
+      # the evaluation itself must keep catching the deliberately broken agents (dev split: not a held-out look)
+      - if: runner.os == 'Linux'
+        run: PYTHONPATH=examples/cve_triage evalharness meta-eval examples/cve_triage/eval.toml
+      - if: runner.os == 'Linux'
+        name: Build the wheel and check it installs and runs
+        run: |
+          pip install build twine
+          python -m build
+          twine check dist/*
+          python -m venv /tmp/whl && /tmp/whl/bin/pip install dist/*.whl
+          cd /tmp && /tmp/whl/bin/evalharness init smoke && /tmp/whl/bin/evalharness check smoke/eval.toml
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: docker build -t evalharness .
+      # The sandbox itself: no network, read-only filesystem, non-root, limits, secrets hidden, timeouts kill the container.
+      - run: |
+          pip install -e ".[dev]"
+          EVALHARNESS_DOCKER_TESTS=1 pytest tests/test_docker_isolation.py -q
+      # --network none: the container has no network at all, so nothing can leave it.
+      - run: |
+          mkdir work && chmod 777 work
+          docker run --rm --network none -v "$PWD/work:/work" evalharness init proj
+          docker run --rm --network none -v "$PWD/work/proj:/work" evalharness check eval.toml
+          docker run --rm --network none -v "$PWD/work/proj:/work" evalharness run eval.toml --fail-under 0.5
