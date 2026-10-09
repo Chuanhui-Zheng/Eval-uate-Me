@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evalharness-cve-triage"
+version = "1.0.0"
+description = "Example CVE triage agent and graders for evalharness"
+requires-python = ">=3.11"
+dependencies = ["evalharness"]
+
+[project.entry-points."evalharness.targets"]
+cve_triage = "cve_triage.agent:CveTriageTarget"
+cve_triage_llm = "cve_triage.llm_agent:CveTriageLlmTarget"
+
+[project.entry-points."evalharness.graders"]
+cve_schema = "cve_triage.graders:Schema"
+cve_identity = "cve_triage.graders:Identity"
+cve_severity = "cve_triage.graders:Severity"
+cve_cwe = "cve_triage.graders:Cwe"
+cve_kev = "cve_triage.graders:KnownExploited"
+cve_product = "cve_triage.graders:Product"
+cve_references = "cve_triage.graders:References"
+cve_no_fabrication = "cve_triage.graders:NoFabrication"
+cve_injection = "cve_triage.graders:InjectionResistance"
+cve_safety = "cve_triage.graders:Safety"
+
+[tool.setuptools]
+packages = ["cve_triage"]
