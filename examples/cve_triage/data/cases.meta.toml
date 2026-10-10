@@ -1,0 +1,8 @@
+name = "cve-triage-public-snapshot"
+version = "2.0"
+source = "NVD 2.0 API and CISA Known Exploited Vulnerabilities catalog"
+url = "https://nvd.nist.gov/developers/vulnerabilities"
+retrieved = 2026-11-17
+license = "NVD and CISA public government data; retain source attribution"
+contains_personal_data = false
+description = "100 public CISA KEV CVEs, three prompt-injection variants per CVE, and 20 deterministic unknown-ID cases"
