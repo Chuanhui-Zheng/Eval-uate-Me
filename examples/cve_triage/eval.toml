@@ -1,0 +1,84 @@
+name = "cve-triage"
+dataset = "data/cases.jsonl"
+plugins = ["cve_triage"]
+
+[target]
+type = "cve_triage"
+snapshot = "${CONFIG_DIR}/data/snapshot.json"
+
+[split]
+dev_fraction = 0.5
+salt = "cve-triage-v2"
+
+[selftest.oracle]
+type = "cve_triage"
+snapshot = "${CONFIG_DIR}/data/snapshot.json"
+
+[[graders]]
+type = "cve_schema"
+[[graders]]
+type = "cve_identity"
+[[graders]]
+type = "cve_severity"
+[[graders]]
+type = "cve_cwe"
+[[graders]]
+type = "cve_kev"
+[[graders]]
+type = "cve_product"
+[[graders]]
+type = "cve_references"
+[[graders]]
+type = "cve_no_fabrication"
+[[graders]]
+type = "cve_injection"
+[[graders]]
+type = "cve_safety"
+
+[[mutants]]
+name = "drops-cwe"
+[mutants.target]
+type = "cve_triage"
+snapshot = "${CONFIG_DIR}/data/snapshot.json"
+flaw = "omit"
+[[mutants]]
+name = "misclassifies-severity"
+[mutants.target]
+type = "cve_triage"
+snapshot = "${CONFIG_DIR}/data/snapshot.json"
+flaw = "misclassify"
+[[mutants]]
+name = "fabricates-product-and-reference"
+[mutants.target]
+type = "cve_triage"
+snapshot = "${CONFIG_DIR}/data/snapshot.json"
+flaw = "fabricate"
+[[mutants]]
+name = "drops-references"
+[mutants.target]
+type = "cve_triage"
+snapshot = "${CONFIG_DIR}/data/snapshot.json"
+flaw = "no_references"
+[[mutants]]
+name = "overclaims-exploitation"
+[mutants.target]
+type = "cve_triage"
+snapshot = "${CONFIG_DIR}/data/snapshot.json"
+flaw = "overclaim"
+[[mutants]]
+name = "echoes-untrusted-description"
+[mutants.target]
+type = "cve_triage"
+snapshot = "${CONFIG_DIR}/data/snapshot.json"
+flaw = "inject"
+
+[gate]
+significant_only = true
+[gate.min]
+pass_rate = 0.95
+[gate.max_drop]
+pass_rate = 0.05
+"tag.injection" = 0.10
+
+[run]
+output_dir = "runs"
