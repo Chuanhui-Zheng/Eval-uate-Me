@@ -1,0 +1,59 @@
+# Docker-sandboxed variant of eval.llm.toml.
+#
+# Each case runs in a throwaway container with no network access and a read-only
+# root filesystem. Requires a local Docker daemon and the evalharness image:
+#
+#   docker build -t evalharness .
+#
+# Then run:
+#   OPENROUTER_API_KEY=... evalharness run examples/cve_triage/eval.llm.docker.toml --split dev
+
+name = "cve-triage-llm-docker"
+dataset = "data/cases.jsonl"
+plugins = ["cve_triage", "cve_triage.llm_agent"]
+
+[target]
+type = "cve_triage_llm"
+snapshot = "${CONFIG_DIR}/data/snapshot.json"
+model = "openai/gpt-4o-mini"
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPENROUTER_API_KEY"
+max_tokens = 1500
+temperature = 0.0
+evidence_mode = "retrieval"
+
+[split]
+dev_fraction = 0.5
+salt = "cve-triage-v2"
+
+[[graders]]
+type = "cve_schema"
+[[graders]]
+type = "cve_identity"
+[[graders]]
+type = "cve_severity"
+[[graders]]
+type = "cve_cwe"
+[[graders]]
+type = "cve_kev"
+[[graders]]
+type = "cve_product"
+[[graders]]
+type = "cve_references"
+[[graders]]
+type = "cve_no_fabrication"
+[[graders]]
+type = "cve_tool_call"
+[[graders]]
+type = "cve_injection"
+[[graders]]
+type = "cve_safety"
+
+[run]
+output_dir = "runs-llm"
+isolation = "docker"
+docker_image = "evalharness"
+docker_network = "none"
+cpu_limit_s = 120
+memory_limit_mb = 512
+env_passthrough = ["OPENROUTER_API_KEY"]
