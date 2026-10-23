@@ -1,0 +1,72 @@
+name = "support-reply"
+dataset = "data/cases.jsonl"
+plugins = ["support_reply"]
+
+[target]
+type = "support_reply"
+
+[split]
+dev_fraction = 0.5
+salt = "support-reply-v1"
+
+[selftest.oracle]
+type = "support_reply"
+
+# LLM judge: score each reply on three dimensions using the mock judge.
+# Replace [graders.judge] with a real model for actual evaluation.
+[[graders]]
+type = "llm_judge"
+name = "reply_quality"
+rubric = "You are evaluating a customer support reply. The ticket input is provided above. Score the reply."
+[graders.judge]
+type = "mock"
+
+[[graders]]
+type = "llm_judge"
+name = "reply_quality_dimensions"
+rubric = "You are evaluating a customer support reply on three quality dimensions."
+[[graders.dimensions]]
+name = "addresses_issue"
+description = "The reply directly addresses the customer's specific problem rather than giving a generic response."
+[[graders.dimensions]]
+name = "actionable"
+description = "The reply gives the customer concrete next steps, a workaround, or a clear timeline — not just acknowledgement."
+[[graders.dimensions]]
+name = "appropriate_tone"
+description = "The tone matches the urgency of the ticket. High-urgency tickets receive immediate, empathetic responses. Low-urgency tickets are helpful but not over-apologetic."
+[graders.judge]
+type = "mock"
+
+[[mutants]]
+name = "dismissive"
+[mutants.target]
+type = "support_reply"
+flaw = "dismissive"
+
+[[mutants]]
+name = "wrong-tone"
+[mutants.target]
+type = "support_reply"
+flaw = "wrong_tone"
+
+[[mutants]]
+name = "empty-reply"
+[mutants.target]
+type = "support_reply"
+flaw = "empty"
+
+[[mutants]]
+name = "no-action"
+[mutants.target]
+type = "support_reply"
+flaw = "no_action"
+
+[gate]
+significant_only = true
+[gate.min]
+pass_rate = 0.70
+[gate.max_drop]
+pass_rate = 0.10
+
+[run]
+output_dir = "runs"
