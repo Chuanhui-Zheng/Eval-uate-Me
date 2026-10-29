@@ -1,0 +1,45 @@
+# TEMPLATE: comment an eval comparison (base branch vs this pull request) on every pull request.
+#
+# This is NOT run in this repository's own CI and has NOT been tested against a real pull request. Read it, adapt it, and
+# try it on a throwaway PR first. Copy it to .github/workflows/ in your project.
+#
+# Security: this uses `pull_request` (no secrets for forks). Do not switch it to `pull_request_target` to get secrets
+# unless you understand that it would then run code from the PR with those secrets.
+name: eval-on-pull-request
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write   # to post the comment
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+      - uses: actions/checkout@v4
+        with:
+          path: head
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "evalharness @ git+https://github.com/Chuanhui-Zheng/Eval-uate-Me@v0.5.2"  # latest tag in this repository; update after a release
+      # Install whatever your eval's plugin needs here, e.g. pip install -e head/path/to/plugin
+
+      # Run the same eval on both versions. `|| true`: a failing threshold must not stop the comparison.
+      - run: cd base && evalharness run eval.toml || true
+      - run: cd head && evalharness run eval.toml || true
+
+      - name: Compare and write the comment
+        id: compare
+        run: |
+          BASE=$(ls -d base/runs/*/ | sort | tail -1)
+          HEAD=$(ls -d head/runs/*/ | sort | tail -1)
+          # exit 1 means "at least one case regressed"; the comment is still written
+          evalharness compare "$BASE" "$HEAD" --markdown --title "Eval: base vs this PR" > comment.md || true
+      - name: Post the comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file comment.md
