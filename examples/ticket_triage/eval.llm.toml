@@ -1,0 +1,34 @@
+name = "ticket-triage-llm"
+dataset = "data/cases.jsonl"
+plugins = ["ticket_triage"]
+
+[target]
+type = "ticket_triage_llm"
+model = "openai/gpt-4o-mini"
+max_tokens = 256
+
+[split]
+dev_fraction = 0.5
+salt = "ticket-triage-v1"
+
+[selftest.oracle]
+type = "ticket_triage"
+
+[[graders]]
+type = "ticket_schema"
+[[graders]]
+type = "ticket_category"
+[[graders]]
+type = "ticket_urgency"
+
+[gate]
+significant_only = true
+[gate.min]
+pass_rate = 0.70
+[gate.max_drop]
+pass_rate = 0.10
+
+[run]
+output_dir = "runs-llm"
+isolation = "process"
+env_passthrough = ["OPENROUTER_API_KEY"]
