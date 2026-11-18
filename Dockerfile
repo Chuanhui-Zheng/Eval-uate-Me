@@ -9,5 +9,5 @@ RUN pip install --no-cache-dir . && useradd --create-home --uid 10001 evaluser
 
 USER evaluser
 WORKDIR /work
-ENTRYPOINT ["evalharness"]
+ENTRYPOINT ["eval_uate_me"]
 CMD ["--help"]
