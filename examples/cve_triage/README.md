@@ -12,11 +12,11 @@ and instruction injection.
 ```bash
 export PYTHONPATH=examples/cve_triage
 .venv/bin/python examples/cve_triage/data/build_dataset.py
-.venv/bin/python -m evalharness check examples/cve_triage/eval.toml
-.venv/bin/python -m evalharness lint examples/cve_triage/eval.toml
-.venv/bin/python -m evalharness selftest examples/cve_triage/eval.toml
-.venv/bin/python -m evalharness run examples/cve_triage/eval.toml
-.venv/bin/python -m evalharness meta-eval examples/cve_triage/eval.toml --auto
+.venv/bin/python -m eval_uate_me check examples/cve_triage/eval.toml
+.venv/bin/python -m eval_uate_me lint examples/cve_triage/eval.toml
+.venv/bin/python -m eval_uate_me selftest examples/cve_triage/eval.toml
+.venv/bin/python -m eval_uate_me run examples/cve_triage/eval.toml
+.venv/bin/python -m eval_uate_me meta-eval examples/cve_triage/eval.toml --auto
 ```
 
 The committed dataset has 420 cases: 100 factual cases, 300 prompt-injection variants, and 20 unknown identifiers. Cases are
@@ -34,8 +34,8 @@ prompt:
 ```bash
 source ~/.zshrc
 export PYTHONPATH=examples/cve_triage
-.venv/bin/python -m evalharness check examples/cve_triage/eval.llm.toml
-.venv/bin/python -m evalharness run examples/cve_triage/eval.llm.toml --split dev
+.venv/bin/python -m eval_uate_me check examples/cve_triage/eval.llm.toml
+.venv/bin/python -m eval_uate_me run examples/cve_triage/eval.llm.toml --split dev
 ```
 
 This requires `OPENROUTER_API_KEY` and an account with model credits. It is intentionally separate from the offline baseline:

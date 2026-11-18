@@ -6,18 +6,18 @@ from helpers import *  # noqa: F401,F403
 
 
 def test_api_version_is_exported_and_listed(capsys):
-    import evalharness
-    assert evalharness.API_VERSION == 1
+    import eval_uate_me
+    assert eval_uate_me.API_VERSION == 1
     assert main(["list"]) == 0
     assert "plugin API 1" in capsys.readouterr().out
 
 
 def test_incompatible_plugin_api_is_refused_with_both_versions(tmp_path, monkeypatch, capsys):
-    from evalharness import PluginError, registry
-    with pytest.raises(PluginError, match="plugin API 2, but this is evalharness plugin API 1"):
+    from eval_uate_me import PluginError, registry
+    with pytest.raises(PluginError, match="plugin API 2, but this is eval_uate_me plugin API 1"):
         @register_target("future_target")
         class Future(Target):
-            evalharness_api = 2
+            eval_uate_me_api = 2
 
             def run(self, case):
                 ...
@@ -25,7 +25,7 @@ def test_incompatible_plugin_api_is_refused_with_both_versions(tmp_path, monkeyp
     mod = _plugin_module(tmp_path, monkeypatch, "future_plugin_mod", (
         '@register_target("future_via_config")\n'
         'class T(Target):\n'
-        '    evalharness_api = 7\n'
+        '    eval_uate_me_api = 7\n'
         '    def run(self, case):\n'
         '        return TargetOutput(output="x")\n'))
     f = _plugin_cfg(tmp_path, mod, "future_via_config")
@@ -41,7 +41,7 @@ def test_undeclared_plugins_work_but_are_flagged(tmp_path, monkeypatch, capsys):
         '        return TargetOutput(output=case.input)\n'
         '@register_target("declared_t")\n'
         'class D(Target):\n'
-        '    evalharness_api = 1\n'
+        '    eval_uate_me_api = 1\n'
         '    def run(self, case):\n'
         '        return TargetOutput(output=case.input)\n'))
     assert main(["check", str(_plugin_cfg(tmp_path, mod, "undeclared_t"))]) == 0
@@ -66,7 +66,7 @@ def test_plugin_import_problems_are_readable(tmp_path, monkeypatch, capsys):
 
 
 def test_a_broken_entry_point_is_recorded_not_fatal(tmp_path, monkeypatch, capsys):
-    from evalharness import registry
+    from eval_uate_me import registry
 
     class BrokenEntry:
         name = "broken_ep_target"
@@ -74,7 +74,7 @@ def test_a_broken_entry_point_is_recorded_not_fatal(tmp_path, monkeypatch, capsy
         def load(self):
             raise ImportError("missing dependency xyz")
 
-    monkeypatch.setattr(registry, "entry_points", lambda group: [BrokenEntry()] if group == "evalharness.targets" else [])
+    monkeypatch.setattr(registry, "entry_points", lambda group: [BrokenEntry()] if group == "eval_uate_me.targets" else [])
     registry.LOAD_ERRORS.clear()
     registry.load_entry_points()                                         # must not raise
     assert registry.LOAD_ERRORS == {"target 'broken_ep_target'": "ImportError: missing dependency xyz"}
@@ -90,8 +90,8 @@ def test_a_broken_entry_point_is_recorded_not_fatal(tmp_path, monkeypatch, capsy
 
 def test_scaffolded_plugin_declares_the_api(tmp_path, monkeypatch, capsys):
     assert main(["init-plugin", "api_scaffold", "--dir", str(tmp_path)]) == 0
-    root = tmp_path / "evalharness-api-scaffold"
-    assert "evalharness_api = 1" in (root / "api_scaffold" / "__init__.py").read_text()
+    root = tmp_path / "eval_uate_me-api-scaffold"
+    assert "eval_uate_me_api = 1" in (root / "api_scaffold" / "__init__.py").read_text()
     monkeypatch.syspath_prepend(str(root))
     capsys.readouterr()
     assert main(["check", str(root / "eval.toml")]) == 0

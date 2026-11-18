@@ -63,7 +63,7 @@ def test_cli_run_compare_and_fail_under(tmp_path, capsys):
 
 
 def test_stats():
-    from evalharness.stats import bootstrap_ci, pass_at_k, paired_delta_ci
+    from eval_uate_me.stats import bootstrap_ci, pass_at_k, paired_delta_ci
     assert pass_at_k(5, 0, 1) == 0.0 and pass_at_k(5, 5, 3) == 1.0
     assert abs(pass_at_k(4, 2, 1) - 0.5) < 1e-9
     lo, hi = bootstrap_ci([1.0] * 10)
@@ -92,7 +92,7 @@ def test_repeats_and_flaky(tmp_path):
 
 
 def test_llm_judge_with_mock_and_parsing():
-    from evalharness.graders import LLMJudge, parse_judge_reply
+    from eval_uate_me.graders import LLMJudge, parse_judge_reply
     assert parse_judge_reply('noise {"score": 4, "reason": "ok"} trailing') == (4, "ok")
     with pytest.raises(ValueError):
         parse_judge_reply('{"score": 9}')
@@ -118,7 +118,7 @@ def test_calibration(tmp_path, capsys):
     f = write_eval(tmp_path, cases)
     _, _, out_dir = run(load_config(f))
     assert main(["calibrate", str(out_dir), "--grader", "exact_match"]) == 0
-    from evalharness.calibration import calibrate
+    from eval_uate_me.calibration import calibrate
     r = calibrate(out_dir, "exact_match")
     assert r["agreement"] == 0.5 and r["kappa"] == 0.0 and r["confusion"]["fp"] == 2
 
@@ -128,7 +128,7 @@ def test_manifest_written_and_redacts(tmp_path):
     f.write_text(f.read_text() + "seed = 7\n")
     results, _, out_dir = run(load_config(f))
     m = json.loads((out_dir / "manifest.json").read_text())
-    from evalharness.manifest import redact, sha256_file
+    from eval_uate_me.manifest import redact, sha256_file
     assert m["dataset_sha256"] == sha256_file(tmp_path / "c.jsonl")
     assert m["seed"] == 7 and m["n_cases"] == 1 and m["harness_version"]
     assert redact({"api_key": "abc", "api_key_env": "X", "n": {"token": "t"}}) == \
@@ -192,7 +192,7 @@ def test_cache_skips_target_and_ignores_errors(tmp_path):
 
 def test_rate_limiter_spaces_calls():
     import time
-    from evalharness.execution import RateLimiter
+    from eval_uate_me.execution import RateLimiter
     rl = RateLimiter(50)  # 20ms apart
     t = time.perf_counter()
     for _ in range(4):
@@ -201,7 +201,7 @@ def test_rate_limiter_spaces_calls():
 
 
 def test_trace_and_cost_graders():
-    from evalharness.graders import MaxCost, MaxSteps, ToolUse
+    from eval_uate_me.graders import MaxCost, MaxSteps, ToolUse
     out = TargetOutput(output="x", trace=[{"tool": "search"}, {"step": "think"}, {"tool": "calc"}],
                        usage={"cost_usd": 0.5, "input_tokens": 100, "output_tokens": 50})
     c = Case("a", "q")

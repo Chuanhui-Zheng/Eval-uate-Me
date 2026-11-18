@@ -30,7 +30,7 @@ large, so extraction is intentionally kept outside the normal test path. After r
 
 ```bash
 .venv/bin/python examples/cve_triage/data/build_dataset.py
-.venv/bin/python -m evalharness check examples/cve_triage/eval.toml
+.venv/bin/python -m eval_uate_me check examples/cve_triage/eval.toml
 ```
 
 Review all changes to the committed snapshot and bump `cases.meta.toml` before treating a refreshed source export as a new

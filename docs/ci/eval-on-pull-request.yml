@@ -25,12 +25,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install "evalharness @ git+https://github.com/Chuanhui-Zheng/Eval-uate-Me@v0.5.2"  # latest tag in this repository; update after a release
+      - run: pip install "eval_uate_me @ git+https://github.com/Chuanhui-Zheng/Eval-uate-Me@v0.5.2"  # latest tag in this repository; update after a release
       # Install whatever your eval's plugin needs here, e.g. pip install -e head/path/to/plugin
 
       # Run the same eval on both versions. `|| true`: a failing threshold must not stop the comparison.
-      - run: cd base && evalharness run eval.toml || true
-      - run: cd head && evalharness run eval.toml || true
+      - run: cd base && eval_uate_me run eval.toml || true
+      - run: cd head && eval_uate_me run eval.toml || true
 
       - name: Compare and write the comment
         id: compare
@@ -38,7 +38,7 @@ jobs:
           BASE=$(ls -d base/runs/*/ | sort | tail -1)
           HEAD=$(ls -d head/runs/*/ | sort | tail -1)
           # exit 1 means "at least one case regressed"; the comment is still written
-          evalharness compare "$BASE" "$HEAD" --markdown --title "Eval: base vs this PR" > comment.md || true
+          eval_uate_me compare "$BASE" "$HEAD" --markdown --title "Eval: base vs this PR" > comment.md || true
       - name: Post the comment
         env:
           GH_TOKEN: ${{ github.token }}

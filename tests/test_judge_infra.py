@@ -1,9 +1,9 @@
 """Tests: judge usage and cost, the reply cache, prompt versions, dimensions and context."""
 from helpers import *  # noqa: F401,F403
 
-import evalharness.graders as graders_mod
-from evalharness import Judge, register_judge
-from evalharness.judges import CachingJudge, JudgeCache
+import eval_uate_me.graders as graders_mod
+from eval_uate_me import Judge, register_judge
+from eval_uate_me.judges import CachingJudge, JudgeCache
 
 CAPTURED: list = []
 
@@ -63,7 +63,7 @@ def test_a_priced_judge_reports_cost_that_reaches_the_summary_and_the_budget(tmp
 
 
 def test_an_unpriced_judge_reports_zero_cost_but_still_counts_tokens(tmp_path):
-    from evalharness.judges import AnthropicJudge
+    from eval_uate_me.judges import AnthropicJudge
     api = _FakeAPI([_usage_ok(GOOD, 123, 45)])
     try:
         reply = AnthropicJudge(api_key_env="FAKE_KEY_ENV", base_url=api.url).complete_with_usage("x")
@@ -210,8 +210,8 @@ def test_custom_dimensions_a_panel_and_bad_replies(tmp_path):
 
 
 def test_dimension_config_errors(tmp_path):
-    from evalharness import ConfigError
-    from evalharness.graders import LLMJudge
+    from eval_uate_me import ConfigError
+    from eval_uate_me.graders import LLMJudge
     for kwargs, message in (({"dimensions": []}, "is empty"), ({"dimensions": ["a", "a"]}, "unique, non-empty"),
                             ({"dimensions": [{"description": "x"}]}, "unique, non-empty"), ({"dimensions": ["a"], "dimension_rule": "some"}, "dimension_rule")):
         with pytest.raises(ConfigError, match=message):
@@ -219,7 +219,7 @@ def test_dimension_config_errors(tmp_path):
 
 
 def test_case_context_is_shown_to_the_judge_so_faithfulness_can_check_grounding():
-    from evalharness.graders import LLMJudge
+    from eval_uate_me.graders import LLMJudge
     g = LLMJudge(rubric="r", judge={"type": "capture_judge"})
     g.grade(Case("a", "q", "ref", {"context": ["fact one", "fact two"]}), TargetOutput(output="x"))
     g.grade(Case("b", "q", "ref", {"context": "one passage"}), TargetOutput(output="x"))

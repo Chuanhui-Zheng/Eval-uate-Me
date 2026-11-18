@@ -12,7 +12,7 @@ import re
 import urllib.error
 import urllib.request
 
-from evalharness import Target, TargetOutput, register_target
+from eval_uate_me import Target, TargetOutput, register_target
 
 from .agent import load_snapshot
 from .schema import DISCLAIMER
@@ -120,7 +120,7 @@ def _lookup_result(snapshot: dict[str, dict], cve_id: str) -> dict:
 
 @register_target("cve_triage_llm")
 class CveTriageLlmTarget(Target):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     network = True
 
     def __init__(self, snapshot: str, model: str = "openai/gpt-4o-mini",
@@ -148,7 +148,7 @@ class CveTriageLlmTarget(Target):
             f"{self.base_url}/chat/completions", data=json.dumps(body).encode("utf-8"),
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
                      "HTTP-Referer": "https://github.com/Chuanhui-Zheng/Eval-uate-Me",
-                     "X-Title": "evalharness CVE triage example"}, method="POST")
+                     "X-Title": "eval_uate_me CVE triage example"}, method="POST")
         try:
             with urllib.request.urlopen(request, timeout=self.timeout_s) as response:
                 payload = json.loads(response.read().decode("utf-8"))

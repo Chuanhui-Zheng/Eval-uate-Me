@@ -1,7 +1,7 @@
 """Baselines and the CI gate: block a change when quality drops, without being fooled by noise.
 
-    evalharness baseline promote RUN     # remember a good run (commit the file)
-    evalharness gate                     # compare the latest run with it; exit 1 on a regression
+    eval_uate_me baseline promote RUN     # remember a good run (commit the file)
+    eval_uate_me gate                     # compare the latest run with it; exit 1 on a regression
 
 Rules live in the config:
 
@@ -70,7 +70,7 @@ def latest_run(runs_dir: Path, name: str) -> Path:
             if best is None or (started, d.name) > best[0]:
                 best = ((started, d.name), d)
     if best is None:
-        raise ConfigError(f"no finished runs named '{name}' under {runs_dir}: run `evalharness run` first (or pass --run)")
+        raise ConfigError(f"no finished runs named '{name}' under {runs_dir}: run `eval_uate_me run` first (or pass --run)")
     return best[1]
 
 
@@ -140,7 +140,7 @@ def evaluate_gate(run_dir: Path, baseline: dict[str, Any] | None, gate: dict[str
     if not needs_baseline:
         return out
     if baseline is None:
-        out.failures.append("no baseline: run `evalharness baseline promote` on a good run and commit the file")
+        out.failures.append("no baseline: run `eval_uate_me baseline promote` on a good run and commit the file")
         return out
     if not gate.get("allow_dataset_change", False) and baseline.get("dataset_sha256") != manifest.get("dataset_sha256"):
         out.failures.append("the baseline was made on a different dataset version: re-promote a run on this dataset "
@@ -189,7 +189,7 @@ def evaluate_gate(run_dir: Path, baseline: dict[str, Any] | None, gate: dict[str
 
 def format_for_ci(outcome: GateOutcome) -> list[str]:
     on_actions = os.environ.get("GITHUB_ACTIONS") == "true"
-    lines = [f"::error::evalharness gate: {f}" if on_actions else f"FAIL {f}" for f in outcome.failures]
-    lines += [f"::warning::evalharness gate: {w}" if on_actions else f"WARN {w}" for w in outcome.warnings]
+    lines = [f"::error::eval_uate_me gate: {f}" if on_actions else f"FAIL {f}" for f in outcome.failures]
+    lines += [f"::warning::eval_uate_me gate: {w}" if on_actions else f"WARN {w}" for w in outcome.warnings]
     lines += [f"note: {n}" for n in outcome.notes]
     return lines

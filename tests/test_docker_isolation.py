@@ -1,4 +1,4 @@
-"""Docker isolation tests. Opt-in: they build the evalharness image and start containers.
+"""Docker isolation tests. Opt-in: they build the eval_uate_me image and start containers.
 
     EVALHARNESS_DOCKER_TESTS=1 pytest tests/test_docker_isolation.py
 """
@@ -10,13 +10,13 @@ from pathlib import Path
 
 import pytest
 
-from evalharness.cli import main
-from evalharness.config import load_config
-from evalharness.runner import run
+from eval_uate_me.cli import main
+from eval_uate_me.config import load_config
+from eval_uate_me.runner import run
 
 ROOT = Path(__file__).parent.parent
 TESTS_DIR = str(Path(__file__).parent)
-IMAGE = "evalharness:test"
+IMAGE = "eval_uate_me:test"
 
 pytestmark = pytest.mark.skipif(os.environ.get("EVALHARNESS_DOCKER_TESTS") != "1",
                                 reason="set EVALHARNESS_DOCKER_TESTS=1 to run the Docker tests")
@@ -52,7 +52,7 @@ def test_container_has_no_network(tmp_path):
 
 
 def test_root_filesystem_is_read_only_and_tmp_is_writable(tmp_path):
-    assert first(tmp_path / "a" if (tmp_path / "a").mkdir() is None else tmp_path, 'type = "iso_write"\npath = "/etc/evalharness_probe"').result.output.startswith("refused")
+    assert first(tmp_path / "a" if (tmp_path / "a").mkdir() is None else tmp_path, 'type = "iso_write"\npath = "/etc/eval_uate_me_probe"').result.output.startswith("refused")
     assert first(tmp_path / "b" if (tmp_path / "b").mkdir() is None else tmp_path, 'type = "iso_write"\npath = "/tmp/probe"').result.output == "wrote"
     mounted = Path(TESTS_DIR) / "must_not_be_written"
     assert first(tmp_path / "c" if (tmp_path / "c").mkdir() is None else tmp_path, f'type = "iso_write"\npath = "{mounted}"').result.output.startswith("refused")
@@ -87,14 +87,14 @@ def test_memory_limit_and_timeout_kill_the_container(tmp_path):
     r = first(d2, 'type = "iso_sleep"', "timeout_s = 3\n")
     assert "timeout after 3" in r.result.error and time.perf_counter() - t0 < 25
     time.sleep(2)
-    left = subprocess.run(["docker", "ps", "-q", "--filter", "name=evalharness-"], capture_output=True, text=True).stdout.strip()
+    left = subprocess.run(["docker", "ps", "-q", "--filter", "name=eval_uate_me-"], capture_output=True, text=True).stdout.strip()
     assert left == ""                                                                  # the container was killed, not leaked
 
 
 def test_missing_image_and_option_validation(tmp_path, capsys):
     f = cfg(tmp_path, 'type = "iso_echo"')
-    f.write_text(f.read_text().replace(IMAGE, "evalharness:does-not-exist"))
+    f.write_text(f.read_text().replace(IMAGE, "eval_uate_me:does-not-exist"))
     assert main(["run", str(f)]) == 2
-    assert "Docker image 'evalharness:does-not-exist' not found: build it with" in capsys.readouterr().err
+    assert "Docker image 'eval_uate_me:does-not-exist' not found: build it with" in capsys.readouterr().err
     f.write_text(f.read_text().replace('isolation = "docker"', 'isolation = "process"'))
     assert main(["check", str(f)]) == 2 and "only apply with isolation = \"docker\"" in capsys.readouterr().err

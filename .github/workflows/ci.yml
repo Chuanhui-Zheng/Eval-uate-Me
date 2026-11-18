@@ -26,23 +26,23 @@ jobs:
         name: Type check and coverage floor
         run: |
           mypy
-          pytest -q --cov=evalharness
+          pytest -q --cov=eval_uate_me
       # The harness gating itself: the demo target must keep passing 60%+ of its cases
       # (one case is expected to error), otherwise the job fails.
       - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/plugin_demo evalharness run examples/plugin_demo/eval.toml --fail-under 0.6
+        run: PYTHONPATH=examples/plugin_demo eval_uate_me run examples/plugin_demo/eval.toml --fail-under 0.6
       # Validate the eval itself: graders must discriminate, dataset must lint cleanly enough to run.
       - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/plugin_demo evalharness selftest examples/plugin_demo/eval.toml
+        run: PYTHONPATH=examples/plugin_demo eval_uate_me selftest examples/plugin_demo/eval.toml
       - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/plugin_demo evalharness lint examples/plugin_demo/eval.toml
+        run: PYTHONPATH=examples/plugin_demo eval_uate_me lint examples/plugin_demo/eval.toml
       - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/cve_triage evalharness lint examples/cve_triage/eval.toml --strict
+        run: PYTHONPATH=examples/cve_triage eval_uate_me lint examples/cve_triage/eval.toml --strict
       - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/cve_triage evalharness selftest examples/cve_triage/eval.toml
+        run: PYTHONPATH=examples/cve_triage eval_uate_me selftest examples/cve_triage/eval.toml
       # the evaluation itself must keep catching the deliberately broken agents (dev split: not a held-out look)
       - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/cve_triage evalharness meta-eval examples/cve_triage/eval.toml
+        run: PYTHONPATH=examples/cve_triage eval_uate_me meta-eval examples/cve_triage/eval.toml
       - if: runner.os == 'Linux'
         name: Build the wheel and check it installs and runs
         run: |
@@ -50,7 +50,7 @@ jobs:
           python -m build
           twine check dist/*
           python -m venv /tmp/whl && /tmp/whl/bin/pip install dist/*.whl
-          cd /tmp && /tmp/whl/bin/evalharness init smoke && /tmp/whl/bin/evalharness check smoke/eval.toml
+          cd /tmp && /tmp/whl/bin/eval_uate_me init smoke && /tmp/whl/bin/eval_uate_me check smoke/eval.toml
 
   docker:
     runs-on: ubuntu-latest
@@ -59,7 +59,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: docker build -t evalharness .
+      - run: docker build -t eval_uate_me .
       # The sandbox itself: no network, read-only filesystem, non-root, limits, secrets hidden, timeouts kill the container.
       - run: |
           pip install -e ".[dev]"
@@ -67,6 +67,6 @@ jobs:
       # --network none: the container has no network at all, so nothing can leave it.
       - run: |
           mkdir work && chmod 777 work
-          docker run --rm --network none -v "$PWD/work:/work" evalharness init proj
-          docker run --rm --network none -v "$PWD/work/proj:/work" evalharness check eval.toml
-          docker run --rm --network none -v "$PWD/work/proj:/work" evalharness run eval.toml --fail-under 0.5
+          docker run --rm --network none -v "$PWD/work:/work" eval_uate_me init proj
+          docker run --rm --network none -v "$PWD/work/proj:/work" eval_uate_me check eval.toml
+          docker run --rm --network none -v "$PWD/work/proj:/work" eval_uate_me run eval.toml --fail-under 0.5

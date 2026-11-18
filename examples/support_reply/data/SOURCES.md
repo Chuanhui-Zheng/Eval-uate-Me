@@ -4,7 +4,7 @@
 
 30 synthetic customer-support scenarios created for this example.
 
-- **Source**: Handcrafted for evalharness demonstration purposes
+- **Source**: Handcrafted for eval_uate_me demonstration purposes
 - **Personal data**: None — all tickets and replies are fictional
 - **Licence**: MIT (same as this repository)
 - **Redistribution**: Permitted

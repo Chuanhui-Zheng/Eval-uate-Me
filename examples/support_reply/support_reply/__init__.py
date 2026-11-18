@@ -1,4 +1,4 @@
-"""Support reply example plugin for evalharness — open-ended generation with LLM judge."""
+"""Support reply example plugin for eval_uate_me — open-ended generation with LLM judge."""
 
 from .agent import SupportReplyTarget
 from .llm_agent import LLMReplyTarget

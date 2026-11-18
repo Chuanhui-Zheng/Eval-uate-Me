@@ -6,7 +6,7 @@ from helpers import *  # noqa: F401,F403
 
 
 def test_lint_flags_each_problem():
-    from evalharness.lint import lint
+    from eval_uate_me.lint import lint
     cases = [
         Case("a", "capital of France is Paris", "Paris"),         # leakage
         Case("b", "same", "x"), Case("c", "same", "y"),           # duplicate input
@@ -21,7 +21,7 @@ def test_lint_flags_each_problem():
 
 
 def test_lint_constant_answer_and_clean_dataset():
-    from evalharness.lint import lint
+    from eval_uate_me.lint import lint
     const = [Case(str(i), f"q{i}", "yes", {"tags": ["t"]}) for i in range(40)]
     assert [f.code for f in lint(const)] == ["constant_answer"]
     clean = [Case(str(i), f"question {i}", f"answer{i % 7}", {"tags": ["t"]}) for i in range(40)]
@@ -29,7 +29,7 @@ def test_lint_constant_answer_and_clean_dataset():
 
 
 def test_lint_partial_tags_and_cli(tmp_path, capsys):
-    from evalharness.lint import lint
+    from eval_uate_me.lint import lint
     cases = [Case("a", "q1", "x", {"tags": ["t"]}), Case("b", "q2", "y")]
     assert {f.code: f.case_ids for f in lint(cases, min_cases=1)}["partially_tagged"] == ["b"]
 

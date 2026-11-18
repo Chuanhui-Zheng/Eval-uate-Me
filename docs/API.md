@@ -3,19 +3,19 @@
 Everything a plugin author needs. The stable surface is defined in [VERSIONING.md](VERSIONING.md).
 
 ```python
-from evalharness import (Case, TargetOutput, Score, Target, Grader, Judge,
+from eval_uate_me import (Case, TargetOutput, Score, Target, Grader, Judge,
                          register_target, register_grader, register_judge, API_VERSION)
 ```
 
 ## Running evals from Python
 ```python
-from evalharness import evaluate, run_eval
+from eval_uate_me import evaluate, run_eval
 
 result = evaluate(my_function, cases=[{"input": "2+2", "expected": "4"}, ("3+3", "6")],
                   graders=["exact_match", lambda case, out: len(out.output) < 50])
 result.pass_rate; result.failures(); result.to_rows()      # EvalResult; to_rows() is flat, ready for a DataFrame
 
-result = run_eval("eval.toml")                              # exactly what `evalharness run` does; result.run_dir is the run
+result = run_eval("eval.toml")                              # exactly what `eval_uate_me run` does; result.run_dir is the run
 ```
 `evaluate` works in memory (nothing is written). The target may be a function (sync or async), a `Target`, or `"module:function"`;
 cases may be `Case` objects, dicts or `(input, expected)` tuples; graders may be `Grader` objects, registered names, `(name, options)`
@@ -37,7 +37,7 @@ covers an HTTP service or a function (see the README). Write a class when you ne
 ```python
 @register_target("my_agent")
 class MyAgent(Target):
-    evalharness_api = 1          # the plugin API version this was written for
+    eval_uate_me_api = 1          # the plugin API version this was written for
     network = False              # True: sends case data off the machine (privacy.local_only refuses it); None: unknown
 
     def __init__(self, model: str, snapshot: str): ...       # options come from the [target] table
@@ -51,7 +51,7 @@ class MyAgent(Target):
 ```python
 @register_grader("my_grader")
 class MyGrader(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "my_grader"
     semantic = True              # False: checks behaviour (latency, steps...), skipped by selftest
     selftest = None              # "guardrail": only the oracle is checked by selftest (see the README)
@@ -66,9 +66,9 @@ A grader that raises fails only that case. `role = "advisory"` in the config mak
 
 ## Loading
 Either list the module in the config (`plugins = ["my_pkg.plugin"]`) or declare entry points in your package's `pyproject.toml`
-(`evalharness.targets`, `evalharness.graders`, `evalharness.judges`); `evalharness init-plugin NAME` generates a working package.
+(`eval_uate_me.targets`, `eval_uate_me.graders`, `eval_uate_me.judges`); `eval_uate_me init-plugin NAME` generates a working package.
 `${CONFIG_DIR}` in any string option expands to the config file's folder.
 
 ## Compatibility
-A plugin that declares `evalharness_api` different from `API_VERSION` is refused with both numbers named. Undeclared plugins work but
-are flagged by `evalharness list` and `check`.
+A plugin that declares `eval_uate_me_api` different from `API_VERSION` is refused with both numbers named. Undeclared plugins work but
+are flagged by `eval_uate_me list` and `check`.

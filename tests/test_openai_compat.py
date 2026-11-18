@@ -1,9 +1,9 @@
 """Tests: the OpenAI-compatible judge backend (against a local fake server; no real API is contacted)."""
 from helpers import *  # noqa: F401,F403
 
-from evalharness import registry
-from evalharness.graders import LLMJudge
-from evalharness.judges import OpenAICompatJudge
+from eval_uate_me import registry
+from eval_uate_me.graders import LLMJudge
+from eval_uate_me.judges import OpenAICompatJudge
 
 
 def _chat(text, pt=200, ct=40):
@@ -82,7 +82,7 @@ def test_errors_are_specific(monkeypatch):
         assert len(api.requests) == 3                                         # the 400 was not retried
     finally:
         api.close()
-    from evalharness import ConfigError
+    from eval_uate_me import ConfigError
     with pytest.raises(ConfigError, match="http:// or https://"):
         OpenAICompatJudge(model="m", base_url="file:///x")
     monkeypatch.delenv("EXTRA_HDR", raising=False)
@@ -91,7 +91,7 @@ def test_errors_are_specific(monkeypatch):
 
 
 def test_transient_failures_are_retried(monkeypatch):
-    from evalharness import judges
+    from eval_uate_me import judges
     monkeypatch.setattr(judges.time, "sleep", lambda s: None)
     api = _FakeAPI([(429, {}), (503, {}), _chat("done")])
     try:

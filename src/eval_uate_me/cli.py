@@ -26,8 +26,8 @@ from .selftest import format_report, selftest
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="evalharness", description="Plugin-based eval harness")
-    p.add_argument("--version", action="version", version=f"evalharness {__version__}")
+    p = argparse.ArgumentParser(prog="eval_uate_me", description="Plugin-based eval harness")
+    p.add_argument("--version", action="version", version=f"eval_uate_me {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("run", help="run an eval from a TOML config")
@@ -212,14 +212,14 @@ def _dispatch(args) -> int:
                                             retry_errors=args.retry_errors, force=args.force, split=args.split)
         except RunInterrupted as e:
             print(f"\ninterrupted after {e.completed}/{e.planned} jobs; results so far are in {e.out_dir}\n"
-                  f"resume with: evalharness run {args.config} --resume {e.out_dir}", file=sys.stderr)
+                  f"resume with: eval_uate_me run {args.config} --resume {e.out_dir}", file=sys.stderr)
             return 130
         except ResumeMismatch as e:
             print(f"error: {e}", file=sys.stderr)
             return 2
         report.print_report(results, summary, out_dir)
         if summary["incomplete"]:
-            print(f"resume with a higher budget: evalharness run {args.config} --resume {out_dir} --max-cost <USD>",
+            print(f"resume with a higher budget: eval_uate_me run {args.config} --resume {out_dir} --max-cost <USD>",
                   file=sys.stderr)
             return 3
         if args.fail_under is not None and summary["pass_rate"] < args.fail_under:
@@ -238,7 +238,7 @@ def _dispatch(args) -> int:
                   + (f" ({info['errored_skipped']} errored attempts skipped)" if info["errored_skipped"] else "")
                   + f"\nreviewers fill human_pass (yes/no) and optionally notes and labeler; "
                     f"{'automatic verdicts are hidden' if info['blind'] else 'automatic verdicts are shown'}"
-                  + f"\nthen: evalharness label import {args.run_dir} {info['path']}")
+                  + f"\nthen: eval_uate_me label import {args.run_dir} {info['path']}")
             return 0
         if args.label_cmd == "disagreements":
             items = disagreements(Path(args.run_dir), args.grader)
@@ -256,12 +256,12 @@ def _dispatch(args) -> int:
             return 0
     if args.cmd == "init":
         files = init_project(args.directory)
-        print(f"created {len(files)} files in {args.directory}\nnext: cd {args.directory} && evalharness check eval.toml "
-              "&& evalharness run eval.toml")
+        print(f"created {len(files)} files in {args.directory}\nnext: cd {args.directory} && eval_uate_me check eval.toml "
+              "&& eval_uate_me run eval.toml")
         return 0
     if args.cmd == "init-plugin":
         root, files = init_plugin(args.name, args.dir)
-        print(f"created {len(files)} files in {root}\nnext: cd {root} && pip install -e . && evalharness run eval.toml")
+        print(f"created {len(files)} files in {root}\nnext: cd {root} && pip install -e . && eval_uate_me run eval.toml")
         return 0
     if args.cmd == "split":
         cfg = load_config(args.config)
@@ -319,7 +319,7 @@ def _dispatch(args) -> int:
         for kind, name in used:
             if (kind, name) in und:
                 print(f"note: {kind} '{name}' declares no plugin API version; it may break on a major upgrade "
-                      f"(set `evalharness_api = {registry.API_VERSION}` on the class)", file=sys.stderr)
+                      f"(set `eval_uate_me_api = {registry.API_VERSION}` on the class)", file=sys.stderr)
         print("dataset metadata: " + (f"{dm.name or '?'} v{dm.version or '?'}, licence {dm.license or 'unrecorded'}"
                                       if dm else "none (lint will warn)"))
         print(f"ok: {len(cases)} cases, target '{cfg.target['type']}', graders "
@@ -481,11 +481,11 @@ def _dispatch(args) -> int:
         registry.load_modules(args.plugin)
         und = set(registry.undeclared())
         singular = {"targets": "target", "graders": "grader", "judges": "judge"}
-        print(f"evalharness {__version__}, plugin API {registry.API_VERSION}")
+        print(f"eval_uate_me {__version__}, plugin API {registry.API_VERSION}")
         for kind, names in registry.available().items():
             print(f"{kind}: " + ", ".join(n + ("*" if (singular[kind], n) in und else "") for n in names))
         if und:
-            print("* declares no plugin API version (set `evalharness_api = " + str(registry.API_VERSION) + "` on the class)")
+            print("* declares no plugin API version (set `eval_uate_me_api = " + str(registry.API_VERSION) + "` on the class)")
         for what, why in registry.LOAD_ERRORS.items():
             print(f"could not load {what}: {why}")
         return 0

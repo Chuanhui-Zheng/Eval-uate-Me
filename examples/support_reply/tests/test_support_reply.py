@@ -1,6 +1,6 @@
 """Tests for the support_reply example."""
 
-from evalharness import Case, TargetOutput
+from eval_uate_me import Case, TargetOutput
 from support_reply.agent import SupportReplyTarget
 
 

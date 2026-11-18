@@ -6,7 +6,7 @@ from helpers import *  # noqa: F401,F403
 
 
 def test_sample_size_matches_hand_computed_values_and_is_consistent():
-    from evalharness.stats import (detectable_effect_paired, detectable_effect_unpaired, sample_size_paired,
+    from eval_uate_me.stats import (detectable_effect_paired, detectable_effect_unpaired, sample_size_paired,
                                    sample_size_unpaired)
     # hand check: (1.95996*sqrt(2*.55*.45) + .84162*sqrt(.25+.24))^2 / .1^2 = 387.35 -> 388
     assert sample_size_unpaired(0.5, 0.1) == 388
@@ -26,7 +26,7 @@ def test_sample_size_matches_hand_computed_values_and_is_consistent():
 
 
 def test_holm_and_permutation_test():
-    from evalharness.stats import holm_adjust, paired_permutation_p
+    from eval_uate_me.stats import holm_adjust, paired_permutation_p
     # sorted p: .01, .03, .04 -> x3, x2, x1 = .03, .06, .04 -> made monotone: .03, .06, .06
     assert holm_adjust([0.01, 0.04, 0.03]) == pytest.approx([0.03, 0.06, 0.06])
     assert holm_adjust([0.5]) == [0.5] and holm_adjust([0.4, 0.6]) == pytest.approx([0.8, 0.8])

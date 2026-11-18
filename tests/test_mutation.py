@@ -1,8 +1,8 @@
 """Tests: output-level mutation operators, operator mutants, sensitivity curves and automatic mutation."""
 from helpers import *  # noqa: F401,F403
 
-from evalharness import ConfigError, Grader, Score
-from evalharness.mutation import (MutatedTarget, apply_operator, discover_sites, generate_mutants, parse_path, resolve, selected)
+from eval_uate_me import ConfigError, Grader, Score
+from eval_uate_me.mutation import (MutatedTarget, apply_operator, discover_sites, generate_mutants, parse_path, resolve, selected)
 
 REAL_CALLS = {"n": 0}
 LABELS = ["alpha", "bravo", "charlie"]

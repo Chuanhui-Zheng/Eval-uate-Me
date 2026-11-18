@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "support-reply"
 version = "1.0.0"
-description = "Support reply example plugin for evalharness"
+description = "Support reply example plugin for eval_uate_me"
 requires-python = ">=3.11"
-dependencies = ["evalharness"]
+dependencies = ["eval_uate_me"]
 
 [tool.setuptools.packages.find]
 where = ["."]

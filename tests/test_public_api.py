@@ -5,15 +5,15 @@ import dataclasses
 import inspect
 import re
 
-import evalharness
-from evalharness import cli, config, graders, judges, models, registry, targets
+import eval_uate_me
+from eval_uate_me import cli, config, graders, judges, models, registry, targets
 
 
 def test_python_api_names_and_signatures():
-    assert sorted(evalharness.__all__) == [
+    assert sorted(eval_uate_me.__all__) == [
         "API_VERSION", "Case", "CaseResult", "ConfigError", "EvalResult", "Grader", "Judge", "PluginError", "Score",
         "Target", "TargetOutput", "TraceStep", "evaluate", "register_grader", "register_judge", "register_target", "run_eval"]
-    assert evalharness.API_VERSION == 1
+    assert eval_uate_me.API_VERSION == 1
     sig = lambda f: str(inspect.signature(f))  # noqa: E731
     assert sig(targets.Target.run) == "(self, case: 'Case') -> 'TargetOutput'"
     assert sig(graders.Grader.grade) == "(self, case: 'Case', out: 'TargetOutput') -> 'Score'"
@@ -50,8 +50,8 @@ def test_cli_commands_and_builtins_only_grow():
 
 def test_on_disk_formats_keep_their_keys(tmp_path):
     import json
-    from evalharness.runner import run
-    from evalharness.config import load_config
+    from eval_uate_me.runner import run
+    from eval_uate_me.config import load_config
     (tmp_path / "c.jsonl").write_text('{"id":"1","input":"a","expected":"a","metadata":{"tags":["t"]}}')
     (tmp_path / "e.toml").write_text('dataset = "c.jsonl"\n[target]\ntype = "echo"\n[[graders]]\ntype = "exact_match"\n')
     _, _, d = run(load_config(tmp_path / "e.toml"))

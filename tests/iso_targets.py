@@ -5,7 +5,7 @@ import sys
 import time
 from pathlib import Path
 
-from evalharness import Target, TargetOutput, register_target
+from eval_uate_me import Target, TargetOutput, register_target
 
 
 @register_target("iso_echo")

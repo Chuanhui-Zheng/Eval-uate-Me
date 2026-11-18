@@ -59,7 +59,7 @@ def test_export_sampling_is_reproducible_and_balanced(tmp_path):
 
 
 def test_import_reads_verdict_words_skips_blanks_and_records_output_hash(tmp_path, capsys):
-    from evalharness.labels import load_labels, output_hash
+    from eval_uate_me.labels import load_labels, output_hash
     d = _labelled_run(tmp_path, n=4)
     main(["label", "export", str(d)])
     sheet = d / "label_sheet.csv"
@@ -93,7 +93,7 @@ def test_import_is_all_or_nothing_with_clear_line_numbers(tmp_path, capsys):
 
 
 def test_import_multiple_labelers_replacement_and_bad_sheets(tmp_path, capsys):
-    from evalharness.labels import load_labels
+    from eval_uate_me.labels import load_labels
     d = _labelled_run(tmp_path, n=2)
     main(["label", "export", str(d)])
     sheet = d / "label_sheet.csv"
@@ -116,7 +116,7 @@ def test_import_multiple_labelers_replacement_and_bad_sheets(tmp_path, capsys):
 
 
 def test_import_works_for_privacy_runs_using_a_self_made_sheet(tmp_path):
-    from evalharness.labels import load_labels
+    from eval_uate_me.labels import load_labels
     d = _labelled_run(tmp_path, n=2, privacy='[privacy]\nstore = "scores_only"\n')
     sheet = tmp_path / "mine.csv"
     sheet.write_text("case_id,human_pass,labeler\nc0,yes,ana\nc1,no,ana\n", encoding="utf-8")
@@ -128,7 +128,7 @@ def test_import_works_for_privacy_runs_using_a_self_made_sheet(tmp_path):
 
 
 def test_calibrate_uses_labels_and_reports_hand_computed_numbers(tmp_path, capsys):
-    from evalharness.calibration import calibrate
+    from eval_uate_me.calibration import calibrate
     d = _labelled_run(tmp_path, n=8)                 # auto: even cases pass, odd cases fail
     human = ["yes", "yes", "yes", "no", "yes", "no", "yes", "no"]   # differs from auto only on c1
     _sheet_with(d, human, "ana", "a.csv")
@@ -149,7 +149,7 @@ def test_calibrate_uses_labels_and_reports_hand_computed_numbers(tmp_path, capsy
 
 
 def test_calibrate_majority_ties_and_inter_labeler_agreement(tmp_path):
-    from evalharness.calibration import calibrate
+    from eval_uate_me.calibration import calibrate
     d = _labelled_run(tmp_path, n=4)
     _sheet_with(d, ["yes", "no", "yes", "no"], "ana", "a.csv")
     _sheet_with(d, ["yes", "yes", "yes", "yes"], "ben", "b.csv")      # ben disagrees on c1, c3
@@ -169,7 +169,7 @@ def test_calibrate_majority_ties_and_inter_labeler_agreement(tmp_path):
 
 
 def test_calibrate_ignores_stale_labels_and_needs_labels(tmp_path):
-    from evalharness.calibration import calibrate
+    from eval_uate_me.calibration import calibrate
     d = _labelled_run(tmp_path, n=4)
     with pytest.raises(ValueError, match="no labelled attempts"):
         calibrate(d, "overall")
@@ -185,7 +185,7 @@ def test_calibrate_ignores_stale_labels_and_needs_labels(tmp_path):
 
 
 def test_calibrate_still_reads_metadata_human_pass_without_labels(tmp_path):
-    from evalharness.calibration import calibrate
+    from eval_uate_me.calibration import calibrate
     cases = [{"id": str(i), "input": "x", "expected": "x", "metadata": {"human_pass": h}}
              for i, h in enumerate([True, True, False, False])]
     _, _, d = run(load_config(write_eval(tmp_path, cases)))
@@ -194,7 +194,7 @@ def test_calibrate_still_reads_metadata_human_pass_without_labels(tmp_path):
 
 
 def test_cohen_kappa_edges():
-    from evalharness.stats import cohen_kappa
+    from eval_uate_me.stats import cohen_kappa
     assert cohen_kappa([True, False, True], [True, False, True]) == 1.0
     assert cohen_kappa([True, True], [True, True]) == 1.0           # both always yes: perfect agreement, no spread
     assert abs(cohen_kappa([True, False], [False, True]) + 1.0) < 1e-9   # total disagreement
@@ -206,7 +206,7 @@ def test_cohen_kappa_edges():
 
 
 def test_disagreements_lists_false_pass_false_fail_and_reviewer_ties(tmp_path, capsys):
-    from evalharness.calibration import disagreements
+    from eval_uate_me.calibration import disagreements
     d = _labelled_run(tmp_path, n=4)                    # auto: c0,c2 pass; c1,c3 fail
     sheet = d / "a.csv"
     main(["label", "export", str(d), "-o", str(sheet)])
@@ -235,7 +235,7 @@ def test_disagreements_lists_false_pass_false_fail_and_reviewer_ties(tmp_path, c
 
 
 def test_disagreements_false_pass_comes_first_and_none_is_reported(tmp_path, capsys):
-    from evalharness.calibration import disagreements
+    from eval_uate_me.calibration import disagreements
     d = _labelled_run(tmp_path, n=4)
     _sheet_with(d, ["no", "yes", "yes", "no"], "ana", "a.csv")
     items = disagreements(d, "exact_match")
@@ -251,7 +251,7 @@ def test_disagreements_false_pass_comes_first_and_none_is_reported(tmp_path, cap
 
 
 def test_carry_copies_labels_only_where_the_output_is_identical(tmp_path, capsys):
-    from evalharness.labels import load_labels
+    from eval_uate_me.labels import load_labels
     a, b = _two_label_runs(tmp_path)
     _sheet_with(a, ["yes", "yes", "no", "yes", "no", "yes"], "ana", "a.csv")
     rows = [json.loads(l) for l in (b / "results.jsonl").read_text().splitlines()]
@@ -269,12 +269,12 @@ def test_carry_copies_labels_only_where_the_output_is_identical(tmp_path, capsys
     capsys.readouterr()
     assert main(["label", "carry", str(a), str(b)]) == 0                    # idempotent: nothing new to copy
     assert "carried 0 labels" in capsys.readouterr().out
-    from evalharness.calibration import calibrate
+    from eval_uate_me.calibration import calibrate
     assert calibrate(b, "overall")["n"] == 4                                # carried labels are usable at once
 
 
 def test_carry_never_overrides_and_skips_labelled_in_export(tmp_path, capsys):
-    from evalharness.labels import load_labels
+    from eval_uate_me.labels import load_labels
     a, b = _two_label_runs(tmp_path, n=4)
     _sheet_with(a, ["yes", "yes", "yes", "yes"], "ana", "a.csv")
     _sheet_with(a, ["no", "no", "no", "no"], "ben", "b.csv")
@@ -297,7 +297,7 @@ def test_carry_never_overrides_and_skips_labelled_in_export(tmp_path, capsys):
 
 
 def test_carry_maps_to_every_repeat_with_the_same_output_and_refuses_bad_input(tmp_path, capsys):
-    from evalharness.labels import load_labels
+    from eval_uate_me.labels import load_labels
     cases = [{"id": "c0", "input": "x", "expected": "x"}]
     f = write_eval(tmp_path / "rep" if (tmp_path / "rep").mkdir() is None else tmp_path, cases)
     f.write_text(f.read_text() + "repeats = 3\n")

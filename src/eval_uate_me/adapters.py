@@ -53,7 +53,7 @@ def _dig(data: Any, path: str) -> Any:
 class HttpTarget(Target):
     """POST each case to a URL. Transport errors, non-2xx statuses and malformed bodies become error results for that case
     (the run continues; use run.retries to retry them)."""
-    evalharness_api = 1
+    eval_uate_me_api = 1
     network = True
 
     def __init__(self, url: str, headers: dict[str, str] | None = None, timeout_s: float = 30.0,
@@ -101,7 +101,7 @@ def _to_output(value: Any) -> TargetOutput:
 @register_target("python")
 class PythonTarget(Target):
     """Call a Python function. `callable = "package.module:function"`; add `paths` for folders to import from."""
-    evalharness_api = 1
+    eval_uate_me_api = 1
 
     def __init__(self, callable: str, with_case: bool = False, paths: list[str] | None = None,
                  network: bool | None = None):

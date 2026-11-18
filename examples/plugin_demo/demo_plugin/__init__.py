@@ -7,14 +7,14 @@ from __future__ import annotations
 
 import re
 
-from evalharness import Grader, Score, Target, TargetOutput, register_grader, register_target
+from eval_uate_me import Grader, Score, Target, TargetOutput, register_grader, register_target
 
 _OPS = {"+": lambda a, b: a + b, "-": lambda a, b: a - b, "*": lambda a, b: a * b, "/": lambda a, b: a / b}
 
 
 @register_target("calculator")
 class CalculatorTarget(Target):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     """Answers questions like "12 * 3". `bug_div_zero=true` simulates a regression for demos."""
 
     def __init__(self, bug_div_zero: bool = False):
@@ -34,7 +34,7 @@ class CalculatorTarget(Target):
 
 @register_grader("numeric_close")
 class NumericClose(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "numeric_close"
 
     def __init__(self, tolerance: float = 1e-6):

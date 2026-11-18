@@ -6,7 +6,7 @@ The reply is open-ended text — it is graded by an LLM judge, not by exact matc
 Usage::
 
     export OPENROUTER_API_KEY=sk-...
-    evalharness run eval.llm.toml
+    eval_uate_me run eval.llm.toml
 """
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ import time
 import urllib.request
 from typing import Any
 
-from evalharness import Case, TargetOutput, register_target
-from evalharness.targets import Target
+from eval_uate_me import Case, TargetOutput, register_target
+from eval_uate_me.targets import Target
 
 _OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -60,7 +60,7 @@ def _openrouter_chat(
 class LLMReplyTarget(Target):
     """Zero-shot LLM customer support reply writer via OpenRouter."""
 
-    evalharness_api = 1
+    eval_uate_me_api = 1
 
     def __init__(
         self,

@@ -27,7 +27,7 @@ def test_selftest_flags_lenient_grader_and_trivial_cases(tmp_path, capsys):
 
 
 def test_selftest_flags_strict_grader(tmp_path):
-    from evalharness.selftest import selftest
+    from eval_uate_me.selftest import selftest
     @register_grader("never")
     class Never(Grader):
         name = "never"
@@ -35,14 +35,14 @@ def test_selftest_flags_strict_grader(tmp_path):
             return Score(self.name, 0.0, False, "no")
 
     cfg = load_config(_selftest_cfg(tmp_path, '[[graders]]\ntype = "never"'))
-    from evalharness.runner import build_graders, load_plugins
+    from eval_uate_me.runner import build_graders, load_plugins
     rep = selftest(load_cases(cfg.dataset), build_graders(cfg))
     assert rep.verdicts[0].verdict == "too_strict" and not rep.ok
 
 
 def test_selftest_catches_judge_that_always_approves(tmp_path):
-    from evalharness.selftest import selftest
-    from evalharness.graders import LLMJudge
+    from eval_uate_me.selftest import selftest
+    from eval_uate_me.graders import LLMJudge
     good = LLMJudge(rubric="r", judge={"type": "mock"}, name="judge_ref")
     lax = LLMJudge(rubric="r", judge={"type": "mock", "reply": '{"score": 5, "reason": "fine"}'}, name="judge_lax")
     cases = [Case(str(i), f"q{i}", f"answer-{i}") for i in range(5)]
@@ -51,7 +51,7 @@ def test_selftest_catches_judge_that_always_approves(tmp_path):
 
 
 def test_selftest_needs_references_and_handles_identical_answers():
-    from evalharness.selftest import selftest, wrong_answers
+    from eval_uate_me.selftest import selftest, wrong_answers
     with pytest.raises(ValueError):
         selftest([Case("a", "q")], [ExactMatch()])
     same = [Case("a", "q1", "x"), Case("b", "q2", "x")]

@@ -1,4 +1,4 @@
-"""`evalharness init` and `init-plugin`: generate a working starting point that passes `check`."""
+"""`eval_uate_me init` and `init-plugin`: generate a working starting point that passes `check`."""
 from __future__ import annotations
 
 import re
@@ -12,7 +12,7 @@ dataset = "cases.jsonl"
 # plugins = ["my_plugin"]          # modules that register your own targets/graders
 
 [target]
-type = "echo"                      # replace with your system under test (see `evalharness list`)
+type = "echo"                      # replace with your system under test (see `eval_uate_me list`)
 
 [[graders]]
 type = "exact_match"
@@ -30,7 +30,7 @@ repeats = 1                        # raise to 3+ if the target is non-determinis
 {"id": "number", "input": 42, "expected": 42, "metadata": {"tags": ["basic"]}}
 {"id": "known-failure", "input": "a", "expected": "b", "metadata": {"tags": ["edge"]}}
 ''',
-    "cases.meta.toml": '''# Where this dataset came from and what it may be used for. `evalharness lint` checks it.
+    "cases.meta.toml": '''# Where this dataset came from and what it may be used for. `eval_uate_me lint` checks it.
 name = "my-dataset"
 version = "1.0"                       # in quotes
 description = "Three sample cases"
@@ -43,10 +43,10 @@ redistributable = true                # false = must never be committed to a pub
     "README.md": '''# My eval
 
 ```bash
-evalharness check eval.toml      # validate config, dataset and plugins
-evalharness lint eval.toml       # is the dataset sound?
-evalharness selftest eval.toml   # do the graders tell good from bad?
-evalharness run eval.toml        # run it; results go in runs/
+eval_uate_me check eval.toml      # validate config, dataset and plugins
+eval_uate_me lint eval.toml       # is the dataset sound?
+eval_uate_me selftest eval.toml   # do the graders tell good from bad?
+eval_uate_me run eval.toml        # run it; results go in runs/
 ```
 
 Each case in `cases.jsonl` is one JSON object: `id`, `input`, `expected`, and optional `metadata` (`tags`).
@@ -54,13 +54,13 @@ The sample target just echoes its input, so `known-failure` fails on purpose. Re
 '''
 }
 
-PLUGIN_INIT = '''"""{name}: an evalharness plugin. Replace the stubs with your system under test and your scoring."""
-from evalharness import Grader, Score, Target, TargetOutput, register_grader, register_target
+PLUGIN_INIT = '''"""{name}: an eval_uate_me plugin. Replace the stubs with your system under test and your scoring."""
+from eval_uate_me import Grader, Score, Target, TargetOutput, register_grader, register_target
 
 
 @register_target("{name}")
 class {cls}Target(Target):
-    evalharness_api = 1   # the evalharness plugin API this was written for (see `evalharness list`)
+    eval_uate_me_api = 1   # the eval_uate_me plugin API this was written for (see `eval_uate_me list`)
     network = False   # True if this sends case data off the machine; privacy.local_only checks it
 
     def __init__(self, shout: bool = False):
@@ -76,7 +76,7 @@ class {cls}Target(Target):
 
 @register_grader("{name}_same_text")
 class {cls}SameText(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "{name}_same_text"
 
     def grade(self, case, out):
@@ -89,16 +89,16 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "evalharness-{dash}"
+name = "eval_uate_me-{dash}"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["evalharness"]
+dependencies = ["eval_uate_me"]
 
-# Installing this package makes the plugin visible to evalharness with no config change.
-[project.entry-points."evalharness.targets"]
+# Installing this package makes the plugin visible to eval_uate_me with no config change.
+[project.entry-points."eval_uate_me.targets"]
 {name} = "{name}:{cls}Target"
 
-[project.entry-points."evalharness.graders"]
+[project.entry-points."eval_uate_me.graders"]
 {name}_same_text = "{name}:{cls}SameText"
 
 [tool.setuptools]
@@ -116,7 +116,7 @@ type = "{name}"
 type = "{name}_same_text"
 '''
 
-PLUGIN_TEST = '''from evalharness import Case
+PLUGIN_TEST = '''from eval_uate_me import Case
 from {name} import {cls}SameText, {cls}Target
 
 
@@ -150,11 +150,11 @@ def init_project(directory: str | Path) -> list[Path]:
 
 
 def init_plugin(name: str, directory: str | Path = ".") -> tuple[Path, list[Path]]:
-    if not re.fullmatch(r"[a-z][a-z0-9_]*", name) or name in ("evalharness", "test"):
+    if not re.fullmatch(r"[a-z][a-z0-9_]*", name) or name in ("eval_uate_me", "test"):
         raise ConfigError(f"plugin name '{name}' must be lowercase letters, digits and underscores, starting "
                           "with a letter (it becomes a Python package name)")
     fmt = {"name": name, "cls": "".join(w.capitalize() for w in name.split("_")), "dash": name.replace("_", "-")}
-    root = Path(directory) / f"evalharness-{fmt['dash']}"
+    root = Path(directory) / f"eval_uate_me-{fmt['dash']}"
     files = {
         "pyproject.toml": PLUGIN_PYPROJECT.format(**fmt),
         f"{name}/__init__.py": PLUGIN_INIT.format(**fmt),

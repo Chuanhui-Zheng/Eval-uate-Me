@@ -6,8 +6,8 @@ from helpers import *  # noqa: F401,F403
 
 
 def test_meta_loads_unquoted_dates_and_reports_every_problem(tmp_path):
-    from evalharness.config import ConfigError
-    from evalharness.dataset_meta import load_meta
+    from eval_uate_me.config import ConfigError
+    from eval_uate_me.dataset_meta import load_meta
     m = load_meta(_meta(tmp_path, FULL_META))
     assert m.retrieved == "2026-09-15" and m.version == "1.0" and m.contains_personal_data is False and m.sha256
     with pytest.raises(ConfigError) as e:
@@ -23,7 +23,7 @@ def test_meta_loads_unquoted_dates_and_reports_every_problem(tmp_path):
 
 
 def test_find_meta_by_convention_and_config_override(tmp_path):
-    from evalharness.dataset_meta import find_meta_path
+    from eval_uate_me.dataset_meta import find_meta_path
     (tmp_path / "d.jsonl").write_text("{}")
     assert find_meta_path(tmp_path / "d.jsonl") is None
     p = _meta(tmp_path, FULL_META)
@@ -34,8 +34,8 @@ def test_find_meta_by_convention_and_config_override(tmp_path):
 
 def test_lint_metadata_findings(tmp_path):
     from datetime import date
-    from evalharness.dataset_meta import load_meta
-    from evalharness.lint import lint
+    from eval_uate_me.dataset_meta import load_meta
+    from eval_uate_me.lint import lint
     clean = [Case(str(i), f"question {i}", f"answer{i % 7}", {"tags": ["t"]}) for i in range(40)]
     assert [f.code for f in lint(clean, check_meta=True)] == ["no_metadata"]
     ok = load_meta(_meta(tmp_path, FULL_META))
@@ -57,8 +57,8 @@ def test_lint_metadata_findings(tmp_path):
 
 def test_lint_flags_restricted_data_that_git_would_publish(tmp_path):
     import subprocess
-    from evalharness.dataset_meta import load_meta
-    from evalharness.lint import lint
+    from eval_uate_me.dataset_meta import load_meta
+    from eval_uate_me.lint import lint
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
     data = tmp_path / "d.jsonl"
     data.write_text('{"id":"1","input":"a","expected":"a"}')
@@ -110,7 +110,7 @@ def test_config_dataset_meta_override_and_cli_lint(tmp_path, capsys):
 
 
 def test_split_assignment_is_stable_reproducible_and_roughly_proportional():
-    from evalharness.splits import case_split
+    from eval_uate_me.splits import case_split
     cases = [Case(f"c{i}", "q") for i in range(1000)]
     first = {c.id: case_split(c, 0.3, "v1") for c in cases}
     assert first == {c.id: case_split(c, 0.3, "v1") for c in cases}                     # reproducible
@@ -124,8 +124,8 @@ def test_split_assignment_is_stable_reproducible_and_roughly_proportional():
 
 
 def test_explicit_split_wins_and_is_validated():
-    from evalharness.config import ConfigError
-    from evalharness.splits import case_split, select, split_cases
+    from eval_uate_me.config import ConfigError
+    from eval_uate_me.splits import case_split, select, split_cases
     forced = Case("a", "q", metadata={"split": "heldout"})
     assert all(case_split(forced, 0.99999, salt) == "heldout" for salt in ("", "x", "y"))
     with pytest.raises(ConfigError, match="metadata.split must be one of"):
@@ -174,7 +174,7 @@ def test_split_command_requires_split_information(tmp_path, capsys):
 
 
 def test_lint_split_findings(tmp_path):
-    from evalharness.lint import lint
+    from eval_uate_me.lint import lint
     big = [Case(f"c{i}", f"question {i}", f"a{i % 9}", {"tags": ["t"], "split": "dev" if i < 20 else "heldout"})
            for i in range(40)]
     assert lint(big) == []
@@ -194,7 +194,7 @@ def test_lint_split_findings(tmp_path):
 
 
 def test_default_is_dev_when_splits_exist_and_all_otherwise(tmp_path, capsys):
-    from evalharness.splits import split_cases
+    from eval_uate_me.splits import split_cases
     f = _split_run_cfg(tmp_path)
     cfg = load_config(f)
     parts = split_cases(load_cases(cfg.dataset), cfg.split_dev_fraction, cfg.split_salt)
@@ -209,7 +209,7 @@ def test_default_is_dev_when_splits_exist_and_all_otherwise(tmp_path, capsys):
 
 
 def test_heldout_looks_are_counted_per_dataset_version(tmp_path, capsys):
-    from evalharness.splits import split_cases
+    from eval_uate_me.splits import split_cases
     f = _split_run_cfg(tmp_path)
     cfg = load_config(f)
     held = {c.id for c in split_cases(load_cases(cfg.dataset), 0.5, "t")["heldout"]}

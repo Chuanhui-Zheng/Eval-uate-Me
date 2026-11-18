@@ -49,7 +49,7 @@ The automatic mutation sweep killed 55/70 generated mutants (85%); its surviving
 
 ## What this proves—and does not prove
 
-This demonstrates that evalharness can evaluate a structured CVE triage contract and detect deliberately designed failure
+This demonstrates that eval_uate_me can evaluate a structured CVE triage contract and detect deliberately designed failure
 modes. The reference target is deterministic and reads the same frozen records used to create the expected answers; its 100%
 baseline is therefore not a claim that an LLM security agent is accurate in production. A live LLM target and independent
 human review are still required for a defensible capability claim.
@@ -82,7 +82,7 @@ Commands used:
 ```bash
 export OPENROUTER_API_KEY=<key>
 # runs with process isolation; env_passthrough ensures the key reaches subprocesses
-evalharness run examples/cve_triage/eval.llm.toml --split dev
+eval_uate_me run examples/cve_triage/eval.llm.toml --split dev
 ```
 
 ## v1.0.4 comparison (fuzzy grader, no process isolation, max_tokens=1500)

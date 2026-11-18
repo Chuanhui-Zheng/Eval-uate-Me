@@ -1,12 +1,12 @@
 # Docker-sandboxed variant of eval.llm.toml.
 #
 # Each case runs in a throwaway container with no network access and a read-only
-# root filesystem. Requires a local Docker daemon and the evalharness image:
+# root filesystem. Requires a local Docker daemon and the eval_uate_me image:
 #
-#   docker build -t evalharness .
+#   docker build -t eval_uate_me .
 #
 # Then run:
-#   OPENROUTER_API_KEY=... evalharness run examples/cve_triage/eval.llm.docker.toml --split dev
+#   OPENROUTER_API_KEY=... eval_uate_me run examples/cve_triage/eval.llm.docker.toml --split dev
 
 name = "cve-triage-llm-docker"
 dataset = "data/cases.jsonl"
@@ -52,7 +52,7 @@ type = "cve_safety"
 [run]
 output_dir = "runs-llm"
 isolation = "docker"
-docker_image = "evalharness"
+docker_image = "eval_uate_me"
 docker_network = "none"
 cpu_limit_s = 120
 memory_limit_mb = 512

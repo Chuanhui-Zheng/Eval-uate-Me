@@ -25,9 +25,9 @@ def test_init_plugin_generates_a_working_package_with_passing_tests(tmp_path, ca
     import subprocess
     import sys
     assert main(["init-plugin", "scratch_widget", "--dir", str(tmp_path)]) == 0
-    root = tmp_path / "evalharness-scratch-widget"
+    root = tmp_path / "eval_uate_me-scratch-widget"
     text = (root / "pyproject.toml").read_text()
-    assert 'scratch_widget = "scratch_widget:ScratchWidgetTarget"' in text and "evalharness.graders" in text
+    assert 'scratch_widget = "scratch_widget:ScratchWidgetTarget"' in text and "eval_uate_me.graders" in text
     monkeypatch.syspath_prepend(str(root))
     assert main(["check", str(root / "eval.toml")]) == 0
     assert main(["selftest", str(root / "eval.toml")]) == 0
@@ -37,7 +37,7 @@ def test_init_plugin_generates_a_working_package_with_passing_tests(tmp_path, ca
 
 
 def test_init_plugin_rejects_bad_names(tmp_path, capsys):
-    for bad in ("CVE-Triage", "1abc", "evalharness", "has space"):
+    for bad in ("CVE-Triage", "1abc", "eval_uate_me", "has space"):
         assert main(["init-plugin", bad, "--dir", str(tmp_path)]) == 2
     assert "lowercase letters" in capsys.readouterr().err
     assert list(tmp_path.iterdir()) == []
@@ -45,6 +45,6 @@ def test_init_plugin_rejects_bad_names(tmp_path, capsys):
 
 def test_version_is_consistent_between_package_and_pyproject():
     import tomllib
-    import evalharness
+    import eval_uate_me
     meta = tomllib.loads((Path(__file__).parent.parent / "pyproject.toml").read_text())
-    assert meta["project"]["version"] == evalharness.__version__
+    assert meta["project"]["version"] == eval_uate_me.__version__

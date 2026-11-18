@@ -8,16 +8,16 @@ from pathlib import Path
 
 import pytest
 
-from evalharness import (Case, Grader, Score, Target, TargetOutput, register_grader, register_judge,
+from eval_uate_me import (Case, Grader, Score, Target, TargetOutput, register_grader, register_judge,
                          register_target)
 
-from evalharness.cli import main
+from eval_uate_me.cli import main
 
-from evalharness.config import load_cases, load_config
+from eval_uate_me.config import load_cases, load_config
 
-from evalharness.graders import Contains, ExactMatch, Regex
+from eval_uate_me.graders import Contains, ExactMatch, Regex
 
-from evalharness.runner import run
+from eval_uate_me.runner import run
 
 COPY_STDIN = "import sys; sys.stdout.write(sys.stdin.read())"
 
@@ -179,7 +179,7 @@ def _two_systems(tmp_path):
     return runs
 
 def _panel(*scores, aggregate="majority", threshold=0.75):
-    from evalharness.graders import LLMJudge
+    from eval_uate_me.graders import LLMJudge
     judges = [{"type": "mock", "reply": json.dumps({"score": sc, "reason": f"r{k}"}), "label": f"j{k}"}
               for k, sc in enumerate(scores, 1)]
     return LLMJudge(rubric="r", judges=judges, aggregate=aggregate, pass_threshold=threshold)
@@ -217,7 +217,7 @@ def _right_wrong(n, b_right_ids=None):
     return a, b
 
 def _probe_judges():
-    from evalharness.judges import Judge, _between
+    from eval_uate_me.judges import Judge, _between
 
     def pairwise(prompt, always=None):
         if always:
@@ -337,7 +337,7 @@ def _iso_cfg(tmp_path, monkeypatch, target, run_extra="", n=1, graders='[[grader
     return f
 
 def _plugin_module(tmp_path, monkeypatch, name, body):
-    (tmp_path / f"{name}.py").write_text("from evalharness import Target, TargetOutput, register_target\n" + body)
+    (tmp_path / f"{name}.py").write_text("from eval_uate_me import Target, TargetOutput, register_target\n" + body)
     monkeypatch.syspath_prepend(str(tmp_path))
     return name
 

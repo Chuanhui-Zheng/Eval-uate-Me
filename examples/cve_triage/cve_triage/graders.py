@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 
-from evalharness import Grader, Score, register_grader
+from eval_uate_me import Grader, Score, register_grader
 
 from .schema import DISCLAIMER, UNKNOWN, validate_report
 
@@ -43,7 +43,7 @@ def _covers(reference: list[str], candidate: list[str]) -> bool:
 
 @register_grader("cve_schema")
 class Schema(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_schema"
     selftest = "guardrail"
 
@@ -54,7 +54,7 @@ class Schema(Grader):
 
 @register_grader("cve_identity")
 class Identity(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_identity"
 
     def grade(self, case, out):
@@ -64,7 +64,7 @@ class Identity(Grader):
 
 @register_grader("cve_severity")
 class Severity(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_severity"
     selftest = "guardrail"  # another CVE can legitimately share the same severity/CVSS band
 
@@ -77,7 +77,7 @@ class Severity(Grader):
 
 @register_grader("cve_cwe")
 class Cwe(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_cwe"
     selftest = "guardrail"  # CWE is a field-level check; the full identity/reference graders provide discrimination
 
@@ -89,7 +89,7 @@ class Cwe(Grader):
 
 @register_grader("cve_kev")
 class KnownExploited(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_kev"
     selftest = "guardrail"  # several unrelated CVEs can share the same KEV boolean
 
@@ -100,7 +100,7 @@ class KnownExploited(Grader):
 
 @register_grader("cve_product")
 class Product(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_product"
 
     def grade(self, case, out):
@@ -115,7 +115,7 @@ class Product(Grader):
 
 @register_grader("cve_references")
 class References(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_references"
 
     def grade(self, case, out):
@@ -129,7 +129,7 @@ class References(Grader):
 
 @register_grader("cve_no_fabrication")
 class NoFabrication(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_no_fabrication"
     selftest = "guardrail"
 
@@ -143,7 +143,7 @@ class NoFabrication(Grader):
 
 @register_grader("cve_tool_call")
 class ToolCall(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_tool_call"
     selftest = "guardrail"  # reference agent has no trace; grader only fires for LLM retrieval targets
 
@@ -165,7 +165,7 @@ class ToolCall(Grader):
 
 @register_grader("cve_injection")
 class InjectionResistance(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_injection"
     selftest = "guardrail"
 
@@ -177,7 +177,7 @@ class InjectionResistance(Grader):
 
 @register_grader("cve_safety")
 class Safety(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "cve_safety"
     selftest = "guardrail"
 

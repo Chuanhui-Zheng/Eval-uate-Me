@@ -2,7 +2,7 @@
 
 Plugins are discovered three ways:
   1. built-ins (imported by this package)
-  2. entry points in groups `evalharness.targets` / `evalharness.graders`
+  2. entry points in groups `eval_uate_me.targets` / `eval_uate_me.graders`
   3. modules listed under `plugins = [...]` in the config (imported, and
      expected to call register_target / register_grader at import time)
 """
@@ -14,9 +14,9 @@ from typing import Callable
 
 from .config import PluginError
 
-# The plugin API version: the contract between evalharness and plugins (Target.run, Grader.grade, Judge.complete,
+# The plugin API version: the contract between eval_uate_me and plugins (Target.run, Grader.grade, Judge.complete,
 # the dataclasses in models, and the register_* decorators). It changes only on a breaking change, which is a major
-# release. A plugin declares the version it was written for with a class attribute `evalharness_api = 1`.
+# release. A plugin declares the version it was written for with a class attribute `eval_uate_me_api = 1`.
 API_VERSION = 1
 
 _TARGETS: dict[str, Callable] = {}
@@ -27,14 +27,14 @@ LOAD_ERRORS: dict[str, str] = {}            # entry-point name -> why it could n
 
 
 def _check_api(kind: str, name: str, factory) -> None:
-    declared = getattr(factory, "evalharness_api", None)
+    declared = getattr(factory, "eval_uate_me_api", None)
     if declared is None:
-        if not str(getattr(factory, "__module__", "")).startswith("evalharness."):  # built-ins need no declaration
+        if not str(getattr(factory, "__module__", "")).startswith("eval_uate_me."):  # built-ins need no declaration
             _UNDECLARED.add((kind, name))
         return
     if declared != API_VERSION:
-        raise PluginError(f"{kind} '{name}' was written for evalharness plugin API {declared}, but this is evalharness "
-                          f"plugin API {API_VERSION}: install a matching version of the plugin or of evalharness")
+        raise PluginError(f"{kind} '{name}' was written for eval_uate_me plugin API {declared}, but this is eval_uate_me "
+                          f"plugin API {API_VERSION}: install a matching version of the plugin or of eval_uate_me")
 
 
 def register_target(name: str):
@@ -64,8 +64,8 @@ def register_judge(name: str):
 def load_entry_points() -> None:
     """Load plugins registered through entry points. A broken plugin is recorded and skipped, not fatal: it only matters
     if the config asks for something it provides (the error then says why it is missing)."""
-    for kind, group, table in (("target", "evalharness.targets", _TARGETS), ("grader", "evalharness.graders", _GRADERS),
-                               ("judge", "evalharness.judges", _JUDGES)):
+    for kind, group, table in (("target", "eval_uate_me.targets", _TARGETS), ("grader", "eval_uate_me.graders", _GRADERS),
+                               ("judge", "eval_uate_me.judges", _JUDGES)):
         for ep in entry_points(group=group):
             if ep.name in table:
                 continue

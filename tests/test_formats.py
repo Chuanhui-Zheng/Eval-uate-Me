@@ -44,7 +44,7 @@ def test_files_from_before_versioning_still_read_fine(tmp_path, capsys):
     for run_dir in (a, d):
         for name in ("manifest.json", "summary.json", "results.jsonl", "labels.jsonl"):
             if (run_dir / name).exists():
-                _rewrite(run_dir / name, _drop_version)        # what an older evalharness wrote
+                _rewrite(run_dir / name, _drop_version)        # what an older eval_uate_me wrote
     capsys.readouterr()
     assert main(["show", str(d)]) == 0
     assert main(["compare", str(a), str(d)]) == 0
@@ -66,7 +66,7 @@ def test_files_from_a_newer_format_are_refused_with_the_fix(tmp_path, capsys, na
     for cmd in commands:
         code = main(cmd)
         err = capsys.readouterr().err
-        if code == 2 and "written by a newer evalharness" in err and "format_version 99" in err and "upgrade evalharness" in err:
+        if code == 2 and "written by a newer eval_uate_me" in err and "format_version 99" in err and "upgrade eval_uate_me" in err:
             refused += 1
     assert refused >= 1, f"no command refused a newer {name}"       # every file type is refused by at least one reader
 
@@ -88,7 +88,7 @@ def test_every_reader_of_every_file_checks_the_version(tmp_path, capsys):
             capsys.readouterr()
             argv = [a.format(d=d, runs=d.parent) for a in template]
             assert main(argv) == 2, (name, template)
-            assert "written by a newer evalharness" in capsys.readouterr().err, (name, template)
+            assert "written by a newer eval_uate_me" in capsys.readouterr().err, (name, template)
 
 
 def test_a_non_integer_format_version_is_rejected(tmp_path, capsys):
@@ -102,8 +102,8 @@ def test_resume_refuses_a_run_from_a_newer_format(tmp_path):
     f = write_eval(tmp_path, [{"id": "1", "input": "a", "expected": "a"}])
     _, _, d = run(load_config(f))
     _rewrite(d / "manifest.json", _set_version(99))
-    from evalharness import ConfigError
-    with pytest.raises(ConfigError, match="newer evalharness"):
+    from eval_uate_me import ConfigError
+    with pytest.raises(ConfigError, match="newer eval_uate_me"):
         run(load_config(f), resume=d)
 
 
@@ -112,7 +112,7 @@ def test_dataset_rows_may_declare_a_schema_version(tmp_path, capsys):
     f.write_text('{"id":"a","input":1,"expected":1,"schema_version":1}\n{"id":"b","input":2,"expected":2}\n')
     assert [c.id for c in load_cases(f)] == ["a", "b"]
     f.write_text('{"id":"a","input":1,"schema_version":2}\n')
-    from evalharness import ConfigError
+    from eval_uate_me import ConfigError
     with pytest.raises(ConfigError, match="c.jsonl:1: case schema_version 2 is newer"):
         load_cases(f)
     f.write_text('{"id":"a","input":1,"schema_version":"x"}\n')

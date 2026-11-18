@@ -6,7 +6,7 @@ from helpers import *  # noqa: F401,F403
 
 
 def test_sparkline_scales_to_the_unit_range():
-    from evalharness.history import sparkline
+    from eval_uate_me.history import sparkline
     assert sparkline([0, 0.5, 1]) == "▁▅█" and sparkline([1, 1]) == "██" and sparkline([]) == ""
 
 
@@ -92,7 +92,7 @@ def test_markdown_comparison_for_a_pull_request_comment(tmp_path, capsys):
 
 
 def test_markdown_comparison_escapes_table_cells_and_shows_warnings(tmp_path, capsys):
-    from evalharness.report import markdown_compare
+    from eval_uate_me.report import markdown_compare
     cases = [{"id": f"c{i}", "input": f"q{i}", "expected": f"q{i}", "metadata": {"tags": ["a|b<i>"]}} for i in range(8)]
     dirs = []
     for fail in (set(), {f"c{i}" for i in range(8)}):

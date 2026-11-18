@@ -98,7 +98,7 @@ def calibrate(run_dir: Path, grader: str) -> dict:
     n = len(pairs)
     if n == 0:
         raise ConfigError(f"no labelled attempts with a '{grader}' verdict in {run_dir} "
-                          f"(source: {source}); run `evalharness label export`/`import` first")
+                          f"(source: {source}); run `eval_uate_me label export`/`import` first")
 
     tp = sum(a and h for a, h in pairs)
     fp = sum(a and not h for a, h in pairs)

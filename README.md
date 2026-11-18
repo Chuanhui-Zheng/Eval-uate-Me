@@ -1,4 +1,4 @@
-# evalharness
+# eval_uate_me
 
 **Run an evaluation, gate regressions, and test whether your evaluation catches a broken agent.**
 
@@ -16,9 +16,9 @@ cases.jsonl ──► Runner ──► Target ──► output ──► Graders
 
 ```bash
 python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/evalharness init my-eval && cd my-eval
-../.venv/bin/evalharness check eval.toml
-../.venv/bin/evalharness run eval.toml
+.venv/bin/eval_uate_me init my-eval && cd my-eval
+../.venv/bin/eval_uate_me check eval.toml
+../.venv/bin/eval_uate_me run eval.toml
 ```
 
 `init` creates a runnable starter project (config, cases, provenance file). Point the `[target]` at your agent: use the built-in `http` or `python` type for a service or a function, or write a plugin class for anything stateful. `check` validates config and data before anything runs.
@@ -26,9 +26,9 @@ python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 ### 2. Gate regressions in CI
 
 ```bash
-evalharness run eval.toml
-evalharness baseline promote --config eval.toml   # writes eval.baseline.json — commit it
-evalharness gate eval.toml                        # exit 0 pass, 1 regression, 2 cannot decide
+eval_uate_me run eval.toml
+eval_uate_me baseline promote --config eval.toml   # writes eval.baseline.json — commit it
+eval_uate_me gate eval.toml                        # exit 0 pass, 1 regression, 2 cannot decide
 ```
 
 The gate compares the latest run with the baseline. Add rules to the config once you have a baseline:
@@ -55,8 +55,8 @@ flaw = "omit"
 ```
 
 ```bash
-evalharness meta-eval eval.toml           # killed / survived / no-op per mutant
-evalharness meta-eval eval.toml --auto    # damage every field of the real outputs; name blind spots
+eval_uate_me meta-eval eval.toml           # killed / survived / no-op per mutant
+eval_uate_me meta-eval eval.toml --auto    # damage every field of the real outputs; name blind spots
 ```
 
 **killed** = the evaluation scored this mutant significantly lower. **survived** = the evaluation cannot tell it from the real agent — a blind spot to fix with a better grader or more cases. `--auto` finds the blind spots you did not think to write.

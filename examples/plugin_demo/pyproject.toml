@@ -3,17 +3,17 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "evalharness-demo-plugin"
+name = "eval_uate_me-demo-plugin"
 version = "0.1.0"
 description = "Example plugin: a toy calculator agent as an eval target"
 requires-python = ">=3.11"
-dependencies = ["evalharness"]
+dependencies = ["eval_uate_me"]
 
-# Installing this package makes the plugin visible to `evalharness` with no config change.
-[project.entry-points."evalharness.targets"]
+# Installing this package makes the plugin visible to `eval_uate_me` with no config change.
+[project.entry-points."eval_uate_me.targets"]
 calculator = "demo_plugin:CalculatorTarget"
 
-[project.entry-points."evalharness.graders"]
+[project.entry-points."eval_uate_me.graders"]
 numeric_close = "demo_plugin:NumericClose"
 
 [tool.setuptools]

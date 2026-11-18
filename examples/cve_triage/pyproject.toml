@@ -3,17 +3,17 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "evalharness-cve-triage"
+name = "eval_uate_me-cve-triage"
 version = "1.0.0"
-description = "Example CVE triage agent and graders for evalharness"
+description = "Example CVE triage agent and graders for eval_uate_me"
 requires-python = ">=3.11"
-dependencies = ["evalharness"]
+dependencies = ["eval_uate_me"]
 
-[project.entry-points."evalharness.targets"]
+[project.entry-points."eval_uate_me.targets"]
 cve_triage = "cve_triage.agent:CveTriageTarget"
 cve_triage_llm = "cve_triage.llm_agent:CveTriageLlmTarget"
 
-[project.entry-points."evalharness.graders"]
+[project.entry-points."eval_uate_me.graders"]
 cve_schema = "cve_triage.graders:Schema"
 cve_identity = "cve_triage.graders:Identity"
 cve_severity = "cve_triage.graders:Severity"

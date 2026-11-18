@@ -132,7 +132,7 @@ def test_python_target_calls_a_plain_function(tmp_path):
 
 
 def test_python_target_accepts_structured_outputs_and_target_output(tmp_path):
-    src = ("from evalharness import TargetOutput\n"
+    src = ("from eval_uate_me import TargetOutput\n"
            "def answer(text):\n    return TargetOutput(output=text.upper(), trace=[{'tool': 'upper'}], usage={'cost_usd': 0.5})\n")
     r = run(load_config(_py_cfg(tmp_path, src)))[0][0]
     assert r.passed and r.result.trace == [{"tool": "upper"}] and r.result.usage == {"cost_usd": 0.5}

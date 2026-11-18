@@ -5,7 +5,7 @@
   isolation = "docker"   every attempt runs in a throwaway container: no network (`docker_network = "none"`), read-only root
                          filesystem, a small tmpfs /tmp, non-root user, all capabilities dropped, process/memory/CPU limits, and
                          only the folders in `docker_mounts` visible (read-only). A real sandbox, at the cost of ~1 s start-up per
-                         attempt and a local Docker with the evalharness image built (`docker build -t evalharness .`).
+                         attempt and a local Docker with the eval_uate_me image built (`docker build -t eval_uate_me .`).
   isolation = "process"  every attempt runs in a fresh worker process in its own process group: a HARD timeout that kills the
                          whole group, CPU and memory limits (where the OS supports them), and an environment scrubbed down to
                          what the target needs. This is NOT a security sandbox: the code can still read and write your files and
@@ -74,7 +74,7 @@ class IsolatedTarget(Target):
         return json.dumps({"plugins": self.plugins, "target": self.spec, "case": asdict(case)}, ensure_ascii=False, default=str)
 
     def run(self, case: Case) -> TargetOutput:
-        with tempfile.TemporaryDirectory(prefix="evalharness-", ignore_cleanup_errors=True) as home:
+        with tempfile.TemporaryDirectory(prefix="eval_uate_me-", ignore_cleanup_errors=True) as home:
             cmd, env, popen_kwargs = self._command(home)
             try:
                 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -111,12 +111,12 @@ class IsolatedTarget(Target):
         else:
             kwargs["start_new_session"] = True
             kwargs["preexec_fn"] = _limits(self.cpu_limit_s, self.memory_limit_mb)
-        return [sys.executable, "-m", "evalharness.worker"], env, kwargs
+        return [sys.executable, "-m", "eval_uate_me.worker"], env, kwargs
 
     # -- docker mode -------------------------------------------------------------------------------------------
     def _docker_command(self):
         d = self.docker
-        self._container = f"evalharness-{uuid.uuid4().hex[:12]}"
+        self._container = f"eval_uate_me-{uuid.uuid4().hex[:12]}"
         cmd = ["docker", "run", "--rm", "-i", "--init", "--name", self._container, "--network", d.get("net", "none"),
                "--read-only", "--tmpfs", "/tmp:rw,size=64m", "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
                "--pids-limit", "256", "-w", "/tmp"]
@@ -132,7 +132,7 @@ class IsolatedTarget(Target):
         for name in self.env_passthrough:
             if name in os.environ:
                 cmd += ["-e", name]  # the value is taken from the docker client's environment, never put on the command line
-        cmd += [d.get("image", "evalharness:latest"), "worker"]
+        cmd += [d.get("image", "eval_uate_me:latest"), "worker"]
         return cmd, dict(os.environ), ({"start_new_session": True} if sys.platform != "win32" else {})
 
     def _kill(self, proc: subprocess.Popen) -> None:
@@ -181,7 +181,7 @@ def check_docker(image: str) -> None:
         raise ConfigError(f"isolation = \"docker\" needs a working Docker CLI ({e})") from e
     if r.returncode != 0:
         raise ConfigError(f"Docker image '{image}' not found: build it with `docker build -t {image} .` in the "
-                          "evalharness repository (or set run.docker_image)")
+                          "eval_uate_me repository (or set run.docker_image)")
 
 
 def wrap_target(cfg, real: Target, spec: dict) -> Target:

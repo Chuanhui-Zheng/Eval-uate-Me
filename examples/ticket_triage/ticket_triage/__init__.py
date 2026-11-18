@@ -1,4 +1,4 @@
-"""Ticket triage example plugin for evalharness."""
+"""Ticket triage example plugin for eval_uate_me."""
 
 from .agent import TicketTriageTarget
 from .graders import Category, Schema, Urgency

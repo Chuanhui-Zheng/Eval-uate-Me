@@ -7,7 +7,7 @@ valid JSON — the prompt requests a ``response_format`` JSON schema.
 Usage::
 
     export OPENROUTER_API_KEY=sk-...
-    evalharness run eval.llm.toml
+    eval_uate_me run eval.llm.toml
 
 Config keys (all optional):
     model       OpenRouter model ID  (default: openai/gpt-4o-mini)
@@ -22,8 +22,8 @@ import time
 import urllib.request
 from typing import Any
 
-from evalharness import Case, TargetOutput, register_target
-from evalharness.targets import Target
+from eval_uate_me import Case, TargetOutput, register_target
+from eval_uate_me.targets import Target
 
 _OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -97,7 +97,7 @@ def _openrouter_chat(
 class LLMTriageTarget(Target):
     """Zero-shot LLM ticket classifier via OpenRouter."""
 
-    evalharness_api = 1
+    eval_uate_me_api = 1
 
     def __init__(
         self,

@@ -9,7 +9,7 @@ A mutant is an *operator* applied at a *path* of the output of the real target, 
     rate = 0.25                       # fraction of cases damaged (chosen by a hash of the case id, so reproducible)
 
 Because it edits outputs that were already produced (the real target runs once, not once per mutant), hundreds of mutants cost
-almost nothing and need no model calls. `evalharness meta-eval --auto` generates mutants for every field it finds in the real
+almost nothing and need no model calls. `eval_uate_me meta-eval --auto` generates mutants for every field it finds in the real
 outputs; a field whose every mutation survives is a field that no grader looks at.
 """
 from __future__ import annotations
@@ -183,7 +183,7 @@ def selected(case_id: str, name: str, seed: int, rate: float) -> bool:
 
 class MutatedTarget(Target):
     """Replays the real target's recorded outputs with one operator applied. The real target is not called again."""
-    evalharness_api = 1
+    eval_uate_me_api = 1
     network = False
 
     def __init__(self, replay: dict[str, TargetOutput], name: str, operator: str, path: str = "", rate: float = 1.0, seed: int = 0,

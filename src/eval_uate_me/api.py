@@ -1,6 +1,6 @@
 """Run evals from Python (a notebook, a script, a test) without a config file.
 
-    from evalharness import evaluate
+    from eval_uate_me import evaluate
 
     result = evaluate(my_function, cases=[{"input": "2+2", "expected": "4"}, ("3+3", "6")])
     result.pass_rate            # 1.0
@@ -56,7 +56,7 @@ class EvalResult:
 
 
 class _FunctionTarget(Target):
-    evalharness_api = 1
+    eval_uate_me_api = 1
 
     def __init__(self, fn: Callable[..., Any]):
         self.fn = fn
@@ -76,7 +76,7 @@ class _FunctionTarget(Target):
 
 
 class _FunctionGrader(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
 
     def __init__(self, fn: Callable[[Case, TargetOutput], Any]):
         self.fn, self.name = fn, getattr(fn, "__name__", "function_grader")
@@ -164,7 +164,7 @@ def evaluate(target: Any, cases: Iterable[Any], graders: Iterable[Any] | None = 
 
 def run_eval(config: str | Path | Config, *, split: str | None = None, resume: str | Path | None = None,
              retry_errors: bool = False, force: bool = False) -> EvalResult:
-    """Run an eval from a config file exactly as `evalharness run` does (the run directory is written) and return the result."""
+    """Run an eval from a config file exactly as `eval_uate_me run` does (the run directory is written) and return the result."""
     cfg = config if isinstance(config, Config) else load_config(config)
     results, summary, run_dir = run(cfg, resume=Path(resume) if resume else None, retry_errors=retry_errors, force=force, split=split)
     return EvalResult(results, summary, run_dir)

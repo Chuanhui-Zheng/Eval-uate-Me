@@ -6,8 +6,8 @@ eval.toml and as the reference for mutant generation.
 
 from __future__ import annotations
 import json
-from evalharness import Case, TargetOutput, register_target
-from evalharness.targets import Target
+from eval_uate_me import Case, TargetOutput, register_target
+from eval_uate_me.targets import Target
 
 CATEGORIES = ("account_access", "billing", "bug", "feature_request", "how_to")
 URGENCIES = ("low", "medium", "high")
@@ -66,7 +66,7 @@ def _classify(text: str) -> tuple[str, str]:
 
 @register_target("ticket_triage")
 class TicketTriageTarget(Target):
-    evalharness_api = 1
+    eval_uate_me_api = 1
 
     def __init__(self, flaw: str | None = None, **_: object) -> None:
         self.flaw = flaw

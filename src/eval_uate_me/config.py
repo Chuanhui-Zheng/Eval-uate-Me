@@ -32,7 +32,7 @@ class Config:
     cpu_limit_s: float | None = None
     memory_limit_mb: int | None = None
     env_passthrough: list[str] = field(default_factory=list)
-    docker_image: str = "evalharness:latest"
+    docker_image: str = "eval_uate_me:latest"
     docker_mounts: list[str] = field(default_factory=list)
     docker_network: str = "none"
     max_cost_usd: float | None = None
@@ -268,7 +268,7 @@ def load_config(path: str | Path) -> Config:
         cpu_limit_s=run.get("cpu_limit_s"),
         memory_limit_mb=run.get("memory_limit_mb"),
         env_passthrough=list(run.get("env_passthrough", [])),
-        docker_image=run.get("docker_image", "evalharness:latest"),
+        docker_image=run.get("docker_image", "eval_uate_me:latest"),
         docker_mounts=expand_vars(list(run.get("docker_mounts", [])), base),
         docker_network=run.get("docker_network", "none"),
         max_cost_usd=run.get("max_cost_usd"),
@@ -300,8 +300,8 @@ def load_cases(path: Path) -> list[Case]:
         if isinstance(sv, bool) or not isinstance(sv, int) or sv < 1:
             raise ConfigError(f"{path}:{n}: schema_version must be a positive integer, got {sv!r}")
         if sv > CASE_SCHEMA_VERSION:
-            raise ConfigError(f"{path}:{n}: case schema_version {sv} is newer than this evalharness reads ({CASE_SCHEMA_VERSION}): "
-                              "upgrade evalharness")
+            raise ConfigError(f"{path}:{n}: case schema_version {sv} is newer than this eval_uate_me reads ({CASE_SCHEMA_VERSION}): "
+                              "upgrade eval_uate_me")
         cid = str(d.get("id", f"case-{n}"))
         if cid in seen:
             raise ConfigError(f"{path}:{n}: duplicate case id '{cid}'")

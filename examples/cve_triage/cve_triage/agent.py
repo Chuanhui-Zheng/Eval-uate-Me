@@ -1,7 +1,7 @@
 """A deterministic CVE triage reference agent.
 
 The target reads a frozen NVD/CISA snapshot and produces a structured report.  It is intentionally
-small: the example demonstrates what evalharness can test, while an LLM-backed target can be plugged
+small: the example demonstrates what eval_uate_me can test, while an LLM-backed target can be plugged
 in later without changing the graders or dataset contract.
 """
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from evalharness import Target, TargetOutput, register_target
+from eval_uate_me import Target, TargetOutput, register_target
 
 from .schema import DISCLAIMER, UNKNOWN
 
@@ -75,7 +75,7 @@ class ReferenceAgent:
 
 @register_target("cve_triage")
 class CveTriageTarget(Target):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     network = False
 
     def __init__(self, snapshot: str, flaw: str = "none"):

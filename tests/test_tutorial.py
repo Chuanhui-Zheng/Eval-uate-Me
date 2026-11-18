@@ -34,9 +34,9 @@ def test_tutorial_commands_work_as_documented(tmp_path, monkeypatch):
                 if parts[0] == "cd":
                     cwd = cwd / parts[1]
                     continue
-                assert parts[0] == "evalharness", line
+                assert parts[0] == "eval_uate_me", line
                 args = [latest_run(cwd) if a == "RUN" else a for a in parts[1:]]
-                r = subprocess.run([sys.executable, "-m", "evalharness", *args], cwd=cwd, capture_output=True, text=True,
+                r = subprocess.run([sys.executable, "-m", "eval_uate_me", *args], cwd=cwd, capture_output=True, text=True,
                                    env={**os.environ, "PYTHONUTF8": "1"})
                 assert r.returncode == 0, f"`{line}` exited {r.returncode}\n{r.stdout}\n{r.stderr}"
                 if expect.strip():

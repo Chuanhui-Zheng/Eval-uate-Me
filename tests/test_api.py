@@ -1,8 +1,8 @@
 """Tests: the programmatic API (evaluate, run_eval, EvalResult)."""
 from helpers import *  # noqa: F401,F403
 
-import evalharness
-from evalharness import ConfigError, EvalResult, evaluate, run_eval
+import eval_uate_me
+from eval_uate_me import ConfigError, EvalResult, evaluate, run_eval
 
 
 def test_evaluate_a_plain_function_with_mixed_case_forms():
@@ -25,7 +25,7 @@ def test_graders_can_be_names_tuples_objects_or_functions():
     assert [s.grader for s in r.results[0].scores] == ["exact_match", "regex", "<lambda>", "exact_match"]
     only_regex = evaluate(lambda s: s, [("a", None)], graders=[("regex", {"pattern": "^a$"})])
     assert only_regex.pass_rate == 1.0
-    from evalharness import Score
+    from eval_uate_me import Score
 
     def scored(case, out):
         return Score("half", 0.5, False, "meh")
@@ -39,7 +39,7 @@ def test_a_grader_function_must_return_a_bool_or_score():
 
 
 def test_errors_repeats_usage_and_rows():
-    from evalharness import TargetOutput
+    from eval_uate_me import TargetOutput
 
     def flaky(text):
         if text == "boom":
@@ -70,7 +70,7 @@ def test_async_functions_and_module_function_strings(tmp_path, monkeypatch):
 
 
 def test_evaluate_accepts_a_target_instance_and_retries():
-    from evalharness.targets import EchoTarget
+    from eval_uate_me.targets import EchoTarget
     assert evaluate(EchoTarget(), [("a", "a")]).pass_rate == 1.0
     n = {"k": 0}
 
@@ -111,7 +111,7 @@ def test_run_eval_matches_the_command_line(tmp_path, capsys):
 
 def test_the_public_names_and_signatures_are_stable():
     import inspect
-    assert {"EvalResult", "evaluate", "run_eval"} <= set(evalharness.__all__)
+    assert {"EvalResult", "evaluate", "run_eval"} <= set(eval_uate_me.__all__)
     assert str(inspect.signature(evaluate)) == (
         "(target: 'Any', cases: 'Iterable[Any]', graders: 'Iterable[Any] | None' = None, *, repeats: 'int' = 1, "
         "concurrency: 'int' = 4, retries: 'int' = 0, timeout_s: 'float | None' = None, name: 'str' = 'eval') -> 'EvalResult'")

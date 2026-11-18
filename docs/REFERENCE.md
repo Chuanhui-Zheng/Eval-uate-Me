@@ -1,4 +1,4 @@
-# evalharness reference
+# eval_uate_me reference
 
 The full reference for every command and option. Start with the [README](../README.md) for the main line: run an evaluation, gate regressions, then test whether the evaluation catches deliberately broken outputs.
 
@@ -11,15 +11,15 @@ cases.jsonl ──► Runner ──► Target (plugin) ──► output ──�
 ```bash
 python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 source .venv/bin/activate
-evalharness init my-eval && cd my-eval      # a starter project that already runs
-evalharness check eval.toml && evalharness run eval.toml
+eval_uate_me init my-eval && cd my-eval      # a starter project that already runs
+eval_uate_me check eval.toml && eval_uate_me run eval.toml
 ```
 
 Or with Docker (no network needed, runs as a non-root user):
 
 ```bash
-docker build -t evalharness .
-docker run --rm --network none -v "$PWD:/work" evalharness run eval.toml
+docker build -t eval_uate_me .
+docker run --rm --network none -v "$PWD:/work" eval_uate_me run eval.toml
 ```
 
 Commands:
@@ -95,7 +95,7 @@ env_passthrough = ["MY_API_KEY"]
 | `process` | yes: a fresh worker per attempt, killed with its whole process group | yes | yes (PATH, a temp HOME, PYTHONPATH and `env_passthrough` only) | **no: not a security sandbox**, the code can still read/write files and use the network |
 | `docker` | yes: the container is killed | yes | yes | **yes**: `--network none`, read-only root, tmpfs `/tmp`, uid 10001, no capabilities, pid/memory/CPU limits, only `docker_mounts` visible read-only |
 
-`docker` needs the image (`docker build -t evalharness .`), `docker_mounts` for any plugin or data folders (mounted at
+`docker` needs the image (`docker build -t eval_uate_me .`), `docker_mounts` for any plugin or data folders (mounted at
 the same path, so `${CONFIG_DIR}` paths keep working) and about a second per attempt; use `docker_network = "bridge"` only if
 the target must reach the network. Memory limits are not enforced on macOS in `process` mode. Async targets and meta-eval
 honour the same settings.
@@ -110,17 +110,17 @@ very large number of pending futures; results are still held in memory for the s
 
 ## Plugin API version
 
-`evalharness.API_VERSION` (currently `1`) is the contract between the harness and plugins. A plugin declares the version it
-targets with `evalharness_api = 1` on its class; a mismatch is refused with both versions named. A plugin that declares
-nothing works but is marked `*` by `evalharness list` and noted by `check`. A plugin that cannot be imported, or a broken
+`eval_uate_me.API_VERSION` (currently `1`) is the contract between the harness and plugins. A plugin declares the version it
+targets with `eval_uate_me_api = 1` on its class; a mismatch is refused with both versions named. A plugin that declares
+nothing works but is marked `*` by `eval_uate_me list` and noted by `check`. A plugin that cannot be imported, or a broken
 entry point, is reported in plain words instead of a traceback.
 
 ## History, trends and pull requests
 
 ```bash
-evalharness history runs/ --html history.html          # series by eval name, split and dataset version
-evalharness history runs/ --fail-on-regression         # exit 1 if the latest run is a significant drop
-evalharness compare runs/<base> runs/<candidate> --markdown --title "Eval vs main" > comment.md
+eval_uate_me history runs/ --html history.html          # series by eval name, split and dataset version
+eval_uate_me history runs/ --fail-on-regression         # exit 1 if the latest run is a significant drop
+eval_uate_me compare runs/<base> runs/<candidate> --markdown --title "Eval vs main" > comment.md
 ```
 
 `history` compares the latest run with the previous one in its series with the same paired permutation test as `compare`, and
@@ -144,9 +144,9 @@ cost_usd = 25                       # allowed rise versus the baseline, in perce
 ```
 
 ```bash
-evalharness run eval.toml
-evalharness baseline promote --config eval.toml   # writes <config>.baseline.json beside the config: commit it
-evalharness gate eval.toml                        # later runs: exit 0 pass, 1 regression, 2 cannot decide
+eval_uate_me run eval.toml
+eval_uate_me baseline promote --config eval.toml   # writes <config>.baseline.json beside the config: commit it
+eval_uate_me gate eval.toml                        # later runs: exit 0 pass, 1 regression, 2 cannot decide
 ```
 
 `gate` compares the latest run (or `--run DIR`) with the baseline (or `--baseline FILE`). It refuses (exit 2) to compare different
@@ -175,7 +175,7 @@ plugin code. The `http` target is marked as sending data off the machine, which 
 ## Python API
 
 ```python
-from evalharness import evaluate, run_eval
+from eval_uate_me import evaluate, run_eval
 result = evaluate(my_function, cases=[{"input": "2+2", "expected": "4"}, ("3+3", "6")])   # in memory, nothing written
 result = run_eval("eval.toml")                                                          # same as the CLI, returns EvalResult
 assert result.pass_rate >= 0.9
@@ -207,8 +207,8 @@ rates = [0.05, 0.1, 0.25, 0.5, 1.0]   # optional: how often the damage is applie
 The real target runs once and its outputs are replayed with the damage applied, so operator mutants cost no extra target calls.
 
 ```bash
-evalharness meta-eval eval.toml --auto            # discover every field in the real outputs and damage each in turn
-evalharness meta-eval eval.toml --sensitivity     # the smallest damage rate the evaluation notices (needs rates)
+eval_uate_me meta-eval eval.toml --auto            # discover every field in the real outputs and damage each in turn
+eval_uate_me meta-eval eval.toml --sensitivity     # the smallest damage rate the evaluation notices (needs rates)
 ```
 
 `--auto` reports per path how many mutants were killed or survived and names **blind-spot paths** where nothing was caught.
@@ -219,7 +219,7 @@ found 41% (88% after two graders were added).
 ## Does my evaluation catch bad systems? (`meta-eval`)
 
 A high score on the real system proves little if the evaluation would also pass a broken one. List deliberately broken
-variants of your target in the config and run `evalharness meta-eval`:
+variants of your target in the config and run `eval_uate_me meta-eval`:
 
 ```toml
 [[mutants]]
@@ -244,9 +244,9 @@ Plugin options in a config may use `${CONFIG_DIR}` (the config file's folder), s
 ## How many cases do I need, and is this difference real?
 
 ```bash
-evalharness power --baseline 0.7 --delta 0.05        # cases needed to detect a 5-point gain
-evalharness power --baseline 0.7 --n 40              # what 40 cases can reliably show
-evalharness power --baseline 0.7 --config eval.toml --paired --discordant 0.2
+eval_uate_me power --baseline 0.7 --delta 0.05        # cases needed to detect a 5-point gain
+eval_uate_me power --baseline 0.7 --n 40              # what 40 cases can reliably show
+eval_uate_me power --baseline 0.7 --config eval.toml --paired --discordant 0.2
 ```
 
 Planning numbers use a normal approximation and assume independent cases (repeating a case measures the system's
@@ -274,10 +274,10 @@ model = "..."
 ```
 
 ```bash
-evalharness selftest eval.toml       # does it fail empty / wrong answers and pass correct ones?
-evalharness judge-check eval.toml    # length bias, injection, position bias, repeatability
-evalharness calibrate runs/<run> --grader llm_judge   # agreement with human labels
-evalharness pairwise runs/A runs/B --rubric "..."     # head-to-head, both orders
+eval_uate_me selftest eval.toml       # does it fail empty / wrong answers and pass correct ones?
+eval_uate_me judge-check eval.toml    # length bias, injection, position bias, repeatability
+eval_uate_me calibrate runs/<run> --grader llm_judge   # agreement with human labels
+eval_uate_me pairwise runs/A runs/B --rubric "..."     # head-to-head, both orders
 ```
 
 `judge-check` feeds the grader answers built from your references: a wrong answer padded with confident filler, a wrong
@@ -326,10 +326,10 @@ small datasets can come out unbalanced; `lint` warns about a split under 10 case
 both splits.
 
 ```bash
-evalharness split eval.toml                              # counts per split
-evalharness split eval.toml --export parts --only dev    # share dev.jsonl, keep the held-out set private
-evalharness run eval.toml                                # default is dev when the dataset has splits
-evalharness run eval.toml --split heldout                # the final number
+eval_uate_me split eval.toml                              # counts per split
+eval_uate_me split eval.toml --export parts --only dev    # share dev.jsonl, keep the held-out set private
+eval_uate_me run eval.toml                                # default is dev when the dataset has splits
+eval_uate_me run eval.toml --split heldout                # the final number
 ```
 
 A run that includes held-out cases (`heldout` or `all`) counts as a **look**; each is logged per dataset version in
@@ -342,12 +342,12 @@ when given a dev run and a held-out run.
 Reviewers' judgements are what tell you whether an automatic grader (especially an `llm_judge`) can be trusted.
 
 ```bash
-evalharness label export runs/<run> --sample 40 --balance   # sheet of 40 outputs, about half pass / half fail
+eval_uate_me label export runs/<run> --sample 40 --balance   # sheet of 40 outputs, about half pass / half fail
 # send runs/<run>/label_sheet.csv to reviewers; each fills human_pass (yes/no), optionally notes and labeler
-evalharness label import runs/<run> sheet_ana.csv --labeler ana
-evalharness label import runs/<run> sheet_ben.csv --labeler ben
-evalharness calibrate runs/<run> --grader overall           # or a single grader, e.g. llm_judge
-evalharness label disagreements runs/<run> --show-output    # the cases to learn from
+eval_uate_me label import runs/<run> sheet_ana.csv --labeler ana
+eval_uate_me label import runs/<run> sheet_ben.csv --labeler ben
+eval_uate_me calibrate runs/<run> --grader overall           # or a single grader, e.g. llm_judge
+eval_uate_me label disagreements runs/<run> --show-output    # the cases to learn from
 ```
 
 - **Blind by default.** Automatic verdicts are hidden so reviewers are not anchored by them (`--show-verdicts` to include).
@@ -399,10 +399,10 @@ Every finished job is appended to `results.jsonl` immediately, so Ctrl-C or a cr
 `manifest.json` records `status` (`running` / `interrupted` / `incomplete` / `complete`).
 
 ```bash
-evalharness run eval.toml                              # Ctrl-C part-way ...
-evalharness run eval.toml --resume runs/<that-run>     # ... runs only what is missing
-evalharness run eval.toml --max-cost 5                 # stop starting new jobs at $5 of usage.cost_usd
-evalharness run eval.toml --resume runs/<run> --max-cost 20   # raise the budget and finish
+eval_uate_me run eval.toml                              # Ctrl-C part-way ...
+eval_uate_me run eval.toml --resume runs/<that-run>     # ... runs only what is missing
+eval_uate_me run eval.toml --max-cost 5                 # stop starting new jobs at $5 of usage.cost_usd
+eval_uate_me run eval.toml --resume runs/<run> --max-cost 20   # raise the budget and finish
 ```
 
 Resume refuses to continue if the config or dataset changed since the run began (`--force` overrides), because
@@ -419,8 +419,8 @@ rate covers only the jobs that ran; the summary says how many were not run.
 A score is only meaningful if the grader can tell good from bad and the dataset can too.
 
 ```bash
-evalharness lint eval.toml        # is the dataset sound?
-evalharness selftest eval.toml    # do the graders discriminate?
+eval_uate_me lint eval.toml        # is the dataset sound?
+eval_uate_me selftest eval.toml    # do the graders discriminate?
 ```
 
 `selftest` runs three baselines with known answers against your graders: **oracle** (the reference answer,
@@ -442,7 +442,7 @@ Cases may set `metadata.tags` / `metadata.category`; the summary reports pass ra
 ## Writing a plugin
 
 ```python
-from evalharness import Target, TargetOutput, register_target
+from eval_uate_me import Target, TargetOutput, register_target
 
 @register_target("my_agent")
 class MyAgent(Target):
@@ -451,7 +451,7 @@ class MyAgent(Target):
 ```
 
 Load it either by listing the module in the config (`plugins = ["my_pkg.plugin"]`) or via entry points
-(`evalharness.targets` / `evalharness.graders`) in the plugin's own package. Options in the config
+(`eval_uate_me.targets` / `eval_uate_me.graders`) in the plugin's own package. Options in the config
 (`[target]`, `[[graders]]`) are passed to the constructor as keyword arguments.
 
 `examples/cve_triage/` is a fuller public-data example: a reference CVE triage agent, NVD/CISA data, 10 graders, deliberately broken variants,
@@ -459,7 +459,7 @@ systematic output mutation and an offline reproducible dataset. A minimal toy pl
 (an installable package with entry points) is in `examples/plugin_demo/`:
 
 ```bash
-PYTHONPATH=examples/plugin_demo evalharness run examples/plugin_demo/eval.toml
+PYTHONPATH=examples/plugin_demo eval_uate_me run examples/plugin_demo/eval.toml
 ```
 
 ## Output

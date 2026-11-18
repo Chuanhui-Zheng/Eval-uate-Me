@@ -164,7 +164,7 @@ def test_no_baseline_incomplete_runs_and_flags(tmp_path, capsys):
     f = _gcfg(tmp_path, BASIC)
     d = _do(f)
     capsys.readouterr()
-    assert _gate(f) == 1 and "no baseline: run `evalharness baseline promote`" in capsys.readouterr().out
+    assert _gate(f) == 1 and "no baseline: run `eval_uate_me baseline promote`" in capsys.readouterr().out
     _promote(f)
     m = json.loads((d / "manifest.json").read_text())
     m["status"] = "incomplete"
@@ -193,7 +193,7 @@ def test_github_actions_annotations(tmp_path, capsys, monkeypatch):
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
     capsys.readouterr()
     assert _gate(f) == 1
-    assert "::error::evalharness gate: pass_rate 1.0000 is below the minimum 1.1000" in capsys.readouterr().out
+    assert "::error::eval_uate_me gate: pass_rate 1.0000 is below the minimum 1.1000" in capsys.readouterr().out
 
 
 def test_gate_config_validation_and_errors(tmp_path, capsys):
@@ -217,4 +217,4 @@ def test_a_baseline_from_a_newer_format_is_refused(tmp_path, capsys):
     b = json.loads(path.read_text())
     b["format_version"] = 99
     path.write_text(json.dumps(b))
-    assert _gate(f) == 2 and "written by a newer evalharness" in capsys.readouterr().err
+    assert _gate(f) == 2 and "written by a newer eval_uate_me" in capsys.readouterr().err

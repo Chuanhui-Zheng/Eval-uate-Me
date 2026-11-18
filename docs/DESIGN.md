@@ -14,7 +14,7 @@ cases.jsonl ─► Runner ─► ExecPolicy ─► Target (plugin) ─► Target
 - **Target** (`run(case) -> TargetOutput`) and **Grader** (`grade(case, out) -> Score`) are the only two
   extension points a plugin must know; **Judge** is a third, used by the `llm_judge` grader.
 - Plugins register by name via decorators; they are found through config (`plugins = [...]`) or Python
-  entry points (`evalharness.targets|graders|judges`).
+  entry points (`eval_uate_me.targets|graders|judges`).
 
 ## Decisions and trade-offs
 | Decision | Why | Cost |

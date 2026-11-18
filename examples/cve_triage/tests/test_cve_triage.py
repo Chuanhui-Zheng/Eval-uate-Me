@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from evalharness import Case
+from eval_uate_me import Case
 from cve_triage.agent import CveTriageTarget
 from cve_triage.graders import Cwe, Identity, InjectionResistance, KnownExploited, NoFabrication, Product, References, Safety, Schema, Severity, ToolCall, _product_match
 from cve_triage.llm_agent import CveTriageLlmTarget, _evidence_packet, _lookup_result

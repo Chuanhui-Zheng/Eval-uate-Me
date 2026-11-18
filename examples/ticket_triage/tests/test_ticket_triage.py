@@ -1,7 +1,7 @@
 """Tests for the ticket_triage example."""
 
 import pytest
-from evalharness import Case, TargetOutput
+from eval_uate_me import Case, TargetOutput
 from ticket_triage.agent import TicketTriageTarget
 from ticket_triage.graders import Category, Schema, Urgency
 

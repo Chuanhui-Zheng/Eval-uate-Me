@@ -86,7 +86,7 @@ def test_config_dir_variable_makes_paths_independent_of_the_working_directory(tm
 
 
 def test_config_dir_variable_reaches_graders_mutants_and_selftest_oracle(tmp_path):
-    from evalharness.config import expand_vars
+    from eval_uate_me.config import expand_vars
     base = Path("/base")                                       # str() differs per OS ("/base" vs "\\base")
     assert expand_vars({"a": ["x/${CONFIG_DIR}/y", {"b": "${CONFIG_DIR}"}], "n": 3}, base) == {
         "a": [f"x/{base}/y", {"b": str(base)}], "n": 3}

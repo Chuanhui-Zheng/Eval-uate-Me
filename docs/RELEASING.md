@@ -16,14 +16,14 @@ models. The judge is configured to use `openai/gpt-4o-mini` via OpenRouter; any 
 (including `anthropic` or a mock) can be substituted.
 
 No LLM benchmark results are included in this release — the LLM judge introduces cost per case and results depend on
-the judge model chosen. Run `evalharness run eval.llm.toml` with `OPENROUTER_API_KEY` set to produce results.
+the judge model chosen. Run `eval_uate_me run eval.llm.toml` with `OPENROUTER_API_KEY` set to produce results.
 
 ## v1.0.6 release notes
 
 v1.0.6 is a framework-maturity release that addresses gaps identified against mature eval frameworks (Inspect AI). It adds a
 formal trace schema, expands the second worked example to production quality, and ships an interactive trace viewer.
 
-**TraceStep public type.** `TraceStep` (a `TypedDict`) is now exported from the top-level `evalharness` package. It documents
+**TraceStep public type.** `TraceStep` (a `TypedDict`) is now exported from the top-level `eval_uate_me` package. It documents
 the recommended shape for `TargetOutput.trace` entries: `tool` (required), `round`, `model`, `found`. Plugins may add extra
 keys; graders should ignore keys they do not recognise.
 
@@ -107,7 +107,7 @@ version 1; this is a package and benchmark patch release, not a plugin API chang
 
 v1.0.0 is the stable CVE-focused release. It includes `examples/cve_triage`, a public-data CVE triage example built from a
 frozen NVD 2.0 and CISA KEV snapshot. The release snapshot contained 32 reproducible factual and adversarial cases, 10
-deterministic graders, six deliberate mutants, and an OpenRouter-compatible live LLM target. The core evalharness plugin API
+deterministic graders, six deliberate mutants, and an OpenRouter-compatible live LLM target. The core eval_uate_me plugin API
 remains version 1.
 The deterministic baseline does not require an API key; the live LLM demonstration requires `OPENROUTER_API_KEY`. A later
 post-release dataset refresh expands the working example to 100 CVEs and 420 grouped cases; it must be measured separately
@@ -119,7 +119,7 @@ demonstrates evaluator coverage rather than production CVE triage quality. The r
 from six underlying CVEs and achieved 29/32 (91%); all observed failures were prompt-injection cases.
 
 ## Every release
-1. Update the version in **both** `pyproject.toml` and `src/evalharness/__init__.py` (a test fails if they differ).
+1. Update the version in **both** `pyproject.toml` and `src/eval_uate_me/__init__.py` (a test fails if they differ).
 2. Update `docs/ROADMAP.md` and write the release notes: what changed, what was verified, and the known limitations (keep that
    section; it is the project's habit of saying what has *not* been shown).
 3. Push to `main` and wait for CI (tests on Linux, Windows and macOS, type check and coverage floor, the example evals, the wheel build
@@ -135,8 +135,8 @@ from six underlying CVEs and achieved 29/32 (91%); all observed failures were pr
 The package has **not** been published to PyPI: that needs your PyPI account, and publishing a name is permanent. The workflow
 `.github/workflows/publish.yml` is ready and does nothing until you opt in:
 
-1. Create the project on [PyPI](https://pypi.org) (and first try [TestPyPI](https://test.pypi.org)). Check that the name `evalharness`
-   is free; if it is taken, change `name` in `pyproject.toml` (the command stays `evalharness`).
+1. Create the project on [PyPI](https://pypi.org) (and first try [TestPyPI](https://test.pypi.org)). Check that the name `eval_uate_me`
+   is free; if it is taken, change `name` in `pyproject.toml` (the command stays `eval_uate_me`).
 2. In the PyPI project, add a **trusted publisher**: owner `Chuanhui-Zheng`, repository `Eval-uate-Me`, workflow `publish.yml`,
    environment `pypi`. No API token is stored anywhere.
 3. In the GitHub repository, create an environment named `pypi` and set the repository variable `PUBLISH_TO_PYPI` to `true`.

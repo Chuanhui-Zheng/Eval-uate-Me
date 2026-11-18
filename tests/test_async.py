@@ -95,7 +95,7 @@ def test_async_only_target_works_with_sync_executors_and_isolation(tmp_path, mon
     g = _async_cfg(iso, 'type = "iso_async_only"', 'isolation = "process"\n', n=2)
     g.write_text('plugins = ["iso_targets"]\n' + g.read_text())
     assert all(r.passed for r in run(load_config(g))[0])                  # worker process uses the run() fallback
-    from evalharness.targets import Target as T
+    from eval_uate_me.targets import Target as T
 
     class Neither(T):
         pass
@@ -114,7 +114,7 @@ def test_threaded_submission_is_bounded(tmp_path):
     """A huge dataset must not become a huge number of pending futures."""
     import threading
     import time
-    from evalharness.execution import run_threaded
+    from eval_uate_me.execution import run_threaded
     consumed, finished, worst = {"n": 0}, {"n": 0}, {"gap": 0}
     lock = threading.Lock()
 

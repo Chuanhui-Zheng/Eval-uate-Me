@@ -1,8 +1,8 @@
 """Graders for the ticket triage example."""
 
 from __future__ import annotations
-from evalharness import Case, Score, TargetOutput, register_grader
-from evalharness.graders import Grader
+from eval_uate_me import Case, Score, TargetOutput, register_grader
+from eval_uate_me.graders import Grader
 
 VALID_CATEGORIES = {"account_access", "billing", "bug", "feature_request", "how_to"}
 VALID_URGENCIES = {"low", "medium", "high"}
@@ -11,7 +11,7 @@ VALID_URGENCIES = {"low", "medium", "high"}
 @register_grader("ticket_schema")
 class Schema(Grader):
     """Verifies the output is a dict with the required category and urgency fields."""
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "ticket_schema"
     selftest = "guardrail"
 
@@ -33,7 +33,7 @@ class Schema(Grader):
 
 @register_grader("ticket_category")
 class Category(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "ticket_category"
     selftest = "guardrail"
 
@@ -51,7 +51,7 @@ class Category(Grader):
 
 @register_grader("ticket_urgency")
 class Urgency(Grader):
-    evalharness_api = 1
+    eval_uate_me_api = 1
     name = "ticket_urgency"
     selftest = "guardrail"
 

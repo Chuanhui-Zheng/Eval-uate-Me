@@ -6,8 +6,8 @@ useful production agent.
 """
 from __future__ import annotations
 
-from evalharness import Case, TargetOutput, register_target
-from evalharness.targets import Target
+from eval_uate_me import Case, TargetOutput, register_target
+from eval_uate_me.targets import Target
 
 _TEMPLATES: dict[tuple[str, str], str] = {
     ("account_access", "high"): (
@@ -94,7 +94,7 @@ _DEFAULT = (
 class SupportReplyTarget(Target):
     """Template oracle — produces a canned reply based on category and urgency."""
 
-    evalharness_api = 1
+    eval_uate_me_api = 1
 
     def __init__(self, flaw: str | None = None, **_: object) -> None:
         self.flaw = flaw

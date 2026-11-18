@@ -66,7 +66,7 @@ def test_resume_on_complete_run_is_a_noop_and_needs_manifest(tmp_path):
     calls.clear()
     run(load_config(f), resume=run_dir)
     assert calls == []
-    from evalharness.runner import ResumeMismatch
+    from eval_uate_me.runner import ResumeMismatch
     with pytest.raises(ResumeMismatch):
         run(load_config(f), resume=tmp_path)
 

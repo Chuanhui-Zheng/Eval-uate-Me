@@ -21,7 +21,7 @@ class TraceStep(TypedDict, total=False):
     model: str         # LLM model identifier (for LLM-call steps)
     found: bool        # whether a lookup hit the knowledge base
 
-FORMAT_VERSION = 1  # version of the files evalharness writes; see formats.py
+FORMAT_VERSION = 1  # version of the files eval_uate_me writes; see formats.py
 
 
 @dataclass

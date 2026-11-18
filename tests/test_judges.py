@@ -19,8 +19,8 @@ def test_panel_aggregation_rules():
 
 
 def test_single_judge_keeps_the_old_behaviour_and_panel_validation():
-    from evalharness.config import ConfigError
-    from evalharness.graders import LLMJudge
+    from eval_uate_me.config import ConfigError
+    from eval_uate_me.graders import LLMJudge
     s = LLMJudge(rubric="r", judge={"type": "mock", "reply": '{"score": 4, "reason": "ok"}'}).grade(
         Case("a", "q", "ref"), TargetOutput(output="x"))
     assert s.passed and s.reason == "4/5: ok"
@@ -33,7 +33,7 @@ def test_single_judge_keeps_the_old_behaviour_and_panel_validation():
 
 
 def test_panel_network_flag_and_failing_judge_fails_the_case(tmp_path):
-    from evalharness.graders import LLMJudge
+    from eval_uate_me.graders import LLMJudge
     assert LLMJudge(rubric="r", judges=[{"type": "mock"}, {"type": "mock"}]).network is False
     assert LLMJudge(rubric="r", judges=[{"type": "mock"}, {"type": "anthropic"}]).network is True
     broken = write_eval(tmp_path, [{"id": "1", "input": "a", "expected": "a"}], graders=(
@@ -57,8 +57,8 @@ def test_panel_from_config_end_to_end(tmp_path, capsys):
 
 
 def test_selftest_catches_a_panel_that_always_approves(tmp_path):
-    from evalharness.graders import LLMJudge
-    from evalharness.selftest import selftest
+    from eval_uate_me.graders import LLMJudge
+    from eval_uate_me.selftest import selftest
     cases = [Case(str(i), f"q{i}", f"answer-{i}") for i in range(5)]
     lax = _panel(5, 5, 5)
     good = LLMJudge(rubric="r", judges=[{"type": "mock"}, {"type": "mock"}, {"type": "mock"}], name="panel_ref")
@@ -70,7 +70,7 @@ def test_selftest_catches_a_panel_that_always_approves(tmp_path):
 
 
 def test_parse_pair_reply_and_sign_test():
-    from evalharness.pairwise import parse_pair_reply, sign_test_p
+    from eval_uate_me.pairwise import parse_pair_reply, sign_test_p
     assert parse_pair_reply('{"winner": "B", "reason": "x"}') == ("B", "x") and parse_pair_reply('{"winner": "TIE"}')[0] == "tie"
     assert parse_pair_reply('noise {"winner": "a"} noise')[0] == "A"
     for bad in ('{"winner": "C"}', "no json", '{"reason": "x"}'):
@@ -81,8 +81,8 @@ def test_parse_pair_reply_and_sign_test():
 
 
 def test_pairwise_finds_the_better_run_and_cancels_position(tmp_path):
-    from evalharness.judges import MockJudge
-    from evalharness.pairwise import compare_runs
+    from eval_uate_me.judges import MockJudge
+    from eval_uate_me.pairwise import compare_runs
     a, b = _pw_runs(tmp_path, *_right_wrong(12))
     r = compare_runs(a, b, MockJudge(), "matches the reference")
     assert (r.b_wins, r.a_wins, r.ties, r.inconsistent, r.errors) == (12, 0, 0, 0, 0)
@@ -92,8 +92,8 @@ def test_pairwise_finds_the_better_run_and_cancels_position(tmp_path):
 
 
 def test_pairwise_skips_identical_outputs_and_counts_calls(tmp_path):
-    from evalharness.judges import MockJudge
-    from evalharness.pairwise import compare_runs
+    from eval_uate_me.judges import MockJudge
+    from eval_uate_me.pairwise import compare_runs
     calls = []
 
     class Counting(MockJudge):
@@ -109,8 +109,8 @@ def test_pairwise_skips_identical_outputs_and_counts_calls(tmp_path):
 
 
 def test_pairwise_exposes_a_position_biased_judge(tmp_path):
-    from evalharness.judges import Judge
-    from evalharness.pairwise import compare_runs
+    from eval_uate_me.judges import Judge
+    from eval_uate_me.pairwise import compare_runs
 
     class AlwaysFirst(Judge):
         network = False
@@ -127,9 +127,9 @@ def test_pairwise_exposes_a_position_biased_judge(tmp_path):
 
 
 def test_pairwise_single_order_budget_and_errors(tmp_path):
-    from evalharness.config import ConfigError
-    from evalharness.judges import Judge, MockJudge
-    from evalharness.pairwise import compare_runs
+    from eval_uate_me.config import ConfigError
+    from eval_uate_me.judges import Judge, MockJudge
+    from eval_uate_me.pairwise import compare_runs
     a, b = _pw_runs(tmp_path, *_right_wrong(10))
     r = compare_runs(a, b, MockJudge(), "r", both_orders=False, seed=3)
     assert r.calls == 10 and r.b_wins == 10                                                # half the calls
@@ -231,7 +231,7 @@ def test_judge_check_uses_the_whole_panel_for_grading(tmp_path, capsys):
 
 
 def test_anthropic_judge_sends_the_documented_request_and_reads_the_reply(monkeypatch):
-    from evalharness.judges import AnthropicJudge
+    from eval_uate_me.judges import AnthropicJudge
     api = _FakeAPI([_ok('{"score": 4, "reason": "fine"}')])
     try:
         monkeypatch.setenv("FAKE_KEY_ENV", "sk-test-123")
@@ -248,7 +248,7 @@ def test_anthropic_judge_sends_the_documented_request_and_reads_the_reply(monkey
 
 
 def test_anthropic_judge_retries_transient_errors_but_not_client_errors(monkeypatch):
-    from evalharness import judges
+    from eval_uate_me import judges
     monkeypatch.setattr(judges.time, "sleep", lambda s: None)
     monkeypatch.setenv("FAKE_KEY_ENV", "k")
     api = _FakeAPI([(429, {"error": "slow down"}), (529, {"error": "overloaded"}), _ok("done")])
@@ -274,7 +274,7 @@ def test_anthropic_judge_retries_transient_errors_but_not_client_errors(monkeypa
 
 
 def test_anthropic_judge_errors_without_a_key_or_a_server(monkeypatch):
-    from evalharness import judges
+    from eval_uate_me import judges
     monkeypatch.delenv("NO_SUCH_KEY_ENV", raising=False)
     with pytest.raises(RuntimeError, match="NO_SUCH_KEY_ENV is not set"):
         judges.AnthropicJudge(api_key_env="NO_SUCH_KEY_ENV").complete("x")
@@ -285,7 +285,7 @@ def test_anthropic_judge_errors_without_a_key_or_a_server(monkeypatch):
 
 
 def test_llm_judge_grader_works_end_to_end_against_the_fake_api(monkeypatch):
-    from evalharness.graders import LLMJudge
+    from eval_uate_me.graders import LLMJudge
     monkeypatch.setenv("FAKE_KEY_ENV", "k")
     api = _FakeAPI([_ok('Sure. {"score": 5, "reason": "matches"}'), _ok('{"score": 1, "reason": "no"}')])
     try:
