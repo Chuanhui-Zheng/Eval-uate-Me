@@ -36,6 +36,10 @@ h2{font-size:1rem;font-weight:600;color:#444;margin:2rem 0 .75rem;text-transform
 .jump-link{font-size:.78rem;padding:.2rem .6rem;border-radius:99px;background:#fef2f2;color:#c0392b;text-decoration:none;border:1px solid #fecaca}
 .jump-link:hover{background:#fee2e2}
 
+.privacy-banner{background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:.6rem 1rem;font-size:.82rem;color:#78350f;margin:1rem 0}
+
+.section-box{background:#fff;border:1px solid #e8eaed;border-radius:12px;overflow:hidden;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.section-box table{margin:0}
 table{width:100%;border-collapse:collapse}
 th{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#888;padding:.5rem .75rem;border-bottom:2px solid #eef0f4;text-align:left}
 td{padding:.45rem .75rem;border-bottom:1px solid #f0f0f4;font-size:.85rem;vertical-align:top}
@@ -56,28 +60,26 @@ tr:last-child td{border-bottom:none}
 .field-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#888;margin:.75rem 0 .3rem}
 .field-label:first-child{margin-top:0}
 pre{background:#1e1e2e;color:#cdd6f4;padding:.85rem 1rem;border-radius:8px;overflow-x:auto;font-size:.8rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}
-pre .kw{color:#cba6f7}pre .str{color:#a6e3a1}pre .num{color:#fab387}pre .cmt{color:#6c7086;font-style:italic}
 
 .score-row{display:flex;align-items:center;gap:.6rem;padding:.3rem 0}
-.score-name{width:130px;font-size:.82rem;color:#555}
+.score-name{width:170px;font-size:.82rem;color:#555;flex-shrink:0}
 .score-mini-bar{flex:1;background:#eef0f4;border-radius:99px;height:7px;overflow:hidden}
 .score-mini-fill{height:100%;border-radius:99px}
 .score-mini-fill.pass{background:#22c55e}
 .score-mini-fill.fail{background:#ef4444}
 .score-val{width:32px;font-size:.78rem;font-weight:600;text-align:right}
-.score-reason{font-size:.78rem;color:#888;margin-top:.15rem;padding-left:130px}
+.score-reason{font-size:.78rem;color:#888;margin-top:.15rem;padding-left:170px}
 .error-box{background:#fff1f1;border:1px solid #fecaca;border-radius:8px;padding:.6rem .9rem;font-size:.82rem;color:#b91c1c;margin:.5rem 0}
+.case-facts{font-size:.78rem;color:#888;margin:.4rem 0}
 
-.trace-wrap{margin-top:.75rem}
+.trace-wrap{margin-top:.75rem;overflow:hidden;border-radius:8px;border:1px solid #eef0f4}
+.trace-wrap table{margin:0}
 .trace-step-row{cursor:pointer}
 .trace-step-row td:first-child{color:#2563eb;font-weight:600}
 .trace-step-row:hover td{background:#fafbfc}
 .trace-detail-row{display:none}
 .trace-step-row.open+.trace-detail-row{display:table-row}
 .trace-detail-row td{background:#f8f9fb;padding:.5rem 1rem}
-
-.section-box{background:#fff;border:1px solid #e8eaed;border-radius:12px;overflow:hidden;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.section-box table{margin:0}
 """
 
 _JS = """
@@ -104,7 +106,7 @@ def _pct(x: float) -> str:
     return f"{x:.0%}"
 
 
-def _bar(score: float, cls: str = "") -> str:
+def _mini_bar(score: float, cls: str = "") -> str:
     pct = int(score * 100)
     return (f'<div class="score-mini-bar"><div class="score-mini-fill {cls}" style="width:{pct}%"></div></div>'
             f'<div class="score-val">{score:.2f}</div>')
@@ -123,20 +125,35 @@ def render(run_dir: Path) -> str:
     pr_cls = "good" if pr >= 0.8 else ("bad" if pr < 0.5 else "neutral")
 
     # ── header ──────────────────────────────────────────────────────────────
-    out = [f'<!doctype html><html lang=en><meta charset=utf-8>',
-           f'<meta name=viewport content="width=device-width,initial-scale=1">',
+    out = ['<!doctype html><html lang=en><meta charset=utf-8>',
+           '<meta name=viewport content="width=device-width,initial-scale=1">',
            f'<title>{escape(name)}</title>',
            f'<style>{_CSS}</style>',
            '<div class=page>',
            f'<h1>{escape(name)}</h1>',
-           f'<p class=meta>{escape(str(manifest.get("started_at","")))}']
+           '<p class=meta>']
+
+    started = str(manifest.get("started_at", ""))
+    if started:
+        out.append(escape(started) + " · ")
+
+    # dataset metadata
+    dmeta = (manifest.get("dataset_meta") or {})
+    if dmeta:
+        dname = dmeta.get("name", "")
+        dver = dmeta.get("version", "?")
+        dlicense = dmeta.get("license", "licence unrecorded")
+        out.append(f'dataset: {escape(dname)} v{escape(str(dver))}, {escape(dlicense)} · ')
 
     split = summary.get("split", "all")
     if split != "all":
-        out.append(f' · split: <b>{escape(split)}</b>')
+        hlooks = summary.get("heldout_looks")
+        split_txt = split + (f" (look #{hlooks})" if hlooks else "")
+        out.append(f'split: {escape(split_txt)} · ')
+
     git = (manifest.get("git") or {}).get("commit")
     if git:
-        out.append(f' · git {escape(str(git)[:10])}')
+        out.append(f'git {escape(str(git)[:10])}')
     out.append('</p>')
 
     # ── summary cards ────────────────────────────────────────────────────────
@@ -144,7 +161,7 @@ def render(run_dir: Path) -> str:
         ("Pass rate", _pct(pr), pr_cls),
         ("95 % CI", f"{_pct(lo)}–{_pct(hi)}", "neutral"),
         ("Cases", str(summary["cases"]), "neutral"),
-        ("Errors", f"{summary['errors']}", "bad" if summary["errors"] else "good"),
+        ("Errors", str(summary["errors"]), "bad" if summary["errors"] else "good"),
         ("p50 latency", f"{summary['latency_p50_s']:.2f}s", "neutral"),
     ]
     if summary.get("repeats", 1) > 1:
@@ -158,30 +175,16 @@ def render(run_dir: Path) -> str:
                    f'<div class=card-value>{escape(val)}</div></div>')
     out.append('</div>')
 
+    # ── privacy banner ───────────────────────────────────────────────────────
+    if summary.get("privacy_store") == "scores_only":
+        out.append('<div class=privacy-banner><b>Privacy mode:</b> inputs, references, outputs, traces and failure reasons '
+                   'were not stored; only ids, verdicts, scores, latency and usage.</div>')
+
     # ── dimension bars ───────────────────────────────────────────────────────
-    dims = {k.replace("llm_judge dimensions: ", "").split()[0]: v
-            for k, v in summary.items()
-            if "dimensions" in str(k)}
-    dim_data = summary.get("grader_dimensions", {})
-    # fall back: parse from summary keys
+    dim_data: dict[str, float] = {}
     for k, v in summary.items():
-        if isinstance(k, str) and k.startswith("llm_judge dimensions:"):
-            pass
-    # read from summary directly
-    dim_data = {}
-    for k, v in summary.items():
-        if isinstance(k, str) and " dimensions: " in k:
-            for part in str(v).split(", ") if isinstance(v, str) else []:
-                nm, _, sc = part.partition(" ")
-                try:
-                    dim_data[nm] = float(sc)
-                except ValueError:
-                    pass
-    # also check nested
-    if not dim_data:
-        for k, v in summary.items():
-            if isinstance(k, str) and k.endswith("_dimensions") and isinstance(v, dict):
-                dim_data.update(v)
+        if isinstance(k, str) and k.endswith("_dimensions") and isinstance(v, dict):
+            dim_data.update(v)
 
     if dim_data:
         out.append('<h2>Dimension scores</h2><div class=dims>')
@@ -193,29 +196,57 @@ def render(run_dir: Path) -> str:
                        f'<div class=dim-score>{float(sc):.2f}</div></div>')
         out.append('</div>')
 
-    # ── failure jump links ───────────────────────────────────────────────────
-    ordered = sorted(rows, key=lambda d: d["passed"])
-    labels = {id(d): d["case"]["id"] + (f"#{d['attempt']}" if summary.get("repeats", 1) > 1 else "")
-              for d in rows}
-    anchors = {id(d): f"c{n}" for n, d in enumerate(ordered)}
-    failed = [d for d in ordered if not d["passed"]]
+    # ── by tag ───────────────────────────────────────────────────────────────
+    if summary.get("by_tag"):
+        out.append('<h2>By tag</h2><div class=section-box><table>'
+                   '<tr><th>tag</th><th>cases</th><th>pass rate</th></tr>')
+        for t, d in sorted(summary["by_tag"].items(), key=lambda kv: kv[1]["pass_rate"]):
+            out.append(f'<tr><td>{escape(t)}</td><td>{d["cases"]}</td><td>{_pct(d["pass_rate"])}</td></tr>')
+        out.append('</table></div>')
 
-    if failed:
-        out.append(f'<h2>{len(failed)} failure{"s" if len(failed) != 1 else ""}</h2>'
-                   '<div class=jump-links>')
-        for d in failed[:40]:
-            out.append(f'<a class=jump-link href="#{anchors[id(d)]}">{escape(labels[id(d)])}</a>')
-        if len(failed) > 40:
-            out.append(f'<span style="font-size:.78rem;color:#888">… {len(failed)-40} more</span>')
-        out.append('</div>')
-
-    # ── failure reasons ──────────────────────────────────────────────────────
+    # ── failure breakdown ────────────────────────────────────────────────────
     if summary.get("failure_reasons"):
-        out.append('<h2>Failure breakdown</h2><div class=section-box><table>'
-                   '<tr><th>reason</th><th>count</th></tr>')
+        out.append('<h2>Failure reasons</h2><div class=section-box><table>'
+                   '<tr><th>reason</th><th>attempts</th></tr>')
         for r, n in sorted(summary["failure_reasons"].items(), key=lambda kv: -kv[1]):
             out.append(f'<tr><td>{escape(r)}</td><td>{n}</td></tr>')
         out.append('</table></div>')
+
+    # ── ordered results + anchors ────────────────────────────────────────────
+    ordered = sorted(rows, key=lambda d: d["passed"])  # failures first
+    labels = {id(d): d["case"]["id"] + (f"#{d['attempt']}" if summary.get("repeats", 1) > 1 else "")
+              for d in rows}
+    anchors = {id(d): f"case-{n}" for n, d in enumerate(ordered)}
+
+    def link(d) -> str:
+        return f'<a class=jump-link href="#{anchors[id(d)]}">{escape(labels[id(d)])}</a>'
+
+    failed = [d for d in ordered if not d["passed"]]
+    if failed:
+        out.append(f'<h2>Jump to failures</h2><div class=jump-links>')
+        for d in failed[:30]:
+            out.append(link(d))
+        if len(failed) > 30:
+            out.append(f'<span style="font-size:.78rem;color:#888">… {len(failed) - 30} more</span>')
+        out.append('</div>')
+
+    # ── slowest / costliest ──────────────────────────────────────────────────
+    slow = sorted(rows, key=lambda d: -d["result"]["latency_s"])[:5]
+    costly = [d for d in sorted(rows, key=lambda d: -(d["result"].get("usage") or {}).get("cost_usd", 0.0))[:5]
+              if (d["result"].get("usage") or {}).get("cost_usd", 0.0) > 0]
+    out.append('<h2>Slowest and costliest</h2><div class=section-box><table><tr><th>slowest</th><th>latency</th>'
+               + ('<th>costliest</th><th>cost</th>' if costly else '') + '</tr>')
+    for i, d in enumerate(slow):
+        extra = ""
+        if costly:
+            if i < len(costly):
+                cost = costly[i]["result"]["usage"]["cost_usd"]
+                extra = f'<td><a href="#{anchors[id(costly[i])]}">{escape(labels[id(costly[i])])}</a></td><td>${cost:.4f}</td>'
+            else:
+                extra = "<td></td><td></td>"
+        out.append(f'<tr><td><a href="#{anchors[id(d)]}">{escape(labels[id(d)])}</a></td>'
+                   f'<td>{d["result"]["latency_s"]:.2f}s</td>{extra}</tr>')
+    out.append('</table></div>')
 
     # ── per-case results ─────────────────────────────────────────────────────
     out.append('<h2>Results</h2>')
@@ -234,11 +265,23 @@ def render(run_dir: Path) -> str:
                    f'</div>')
         out.append('<div class=case-body>')
 
+        # facts line (retries, cache, usage)
+        facts = []
+        if r.get("retries"):
+            n = r["retries"]
+            facts.append(f"{n} retr{'y' if n == 1 else 'ies'}")
+        if r.get("cached"):
+            facts.append("served from cache")
+        if r.get("usage"):
+            facts.append(", ".join(f"{escape(str(k))} {v:g}" for k, v in sorted(r["usage"].items())))
+        if facts:
+            out.append(f'<div class=case-facts>{" · ".join(facts)}</div>')
+
         if r.get("error"):
             out.append(f'<div class=error-box>⚠ {escape(str(r["error"]))}</div>')
 
         if summary.get("privacy_store") != "scores_only":
-            for field, val in [("input", c["input"]), ("expected", c.get("expected")), ("output", r["output"])]:
+            for field, val in [("input", c.get("input")), ("expected", c.get("expected")), ("output", r.get("output"))]:
                 if val is None:
                     continue
                 out.append(f'<div class=field-label>{field}</div><pre>{_fmt(val)}</pre>')
@@ -247,24 +290,25 @@ def render(run_dir: Path) -> str:
             out.append('<div class=field-label>scores</div>')
             for s in d["scores"]:
                 sc_cls = "pass" if s["passed"] else "fail"
+                advisory_tag = ' <i>(advisory)</i>' if s.get("role") == "advisory" else ""
                 out.append(f'<div class=score-row>'
-                           f'<div class=score-name>{escape(s["grader"])}</div>'
-                           + _bar(s["value"], sc_cls) +
+                           f'<div class=score-name>{escape(s["grader"])}{advisory_tag}</div>'
+                           + _mini_bar(s["value"], sc_cls) +
                            f'</div>')
                 if s.get("reason"):
                     out.append(f'<div class=score-reason>{escape(s["reason"])}</div>')
 
         trace = r.get("trace") or []
         if trace:
-            out.append(f'<div class=field-label>trace ({len(trace)} step{"s" if len(trace)!=1 else ""})</div>'
+            out.append(f'<div class=field-label>trace ({len(trace)} step{"s" if len(trace) != 1 else ""} — click to expand)</div>'
                        '<div class=trace-wrap><table>'
-                       '<tr><th>#</th><th>tool</th><th>round</th><th>summary</th></tr>')
+                       '<tr><th>#</th><th>tool / step</th><th>round</th><th>summary</th></tr>')
             for n, step in enumerate(trace[:100], 1):
                 if isinstance(step, dict):
                     head = escape(str(step.get("tool") or step.get("step") or ""))
                     rnd = escape(str(step.get("round", "")))
-                    rest = {k: v for k, v in step.items() if k not in ("tool","step","round")}
-                    parts = [f"{k}={escape(str(v))}" for k in ("model","found","error") if k in rest]
+                    rest = {k: v for k, v in step.items() if k not in ("tool", "step", "round")}
+                    parts = [f"{k}={escape(str(v))}" for k in ("model", "cve_id", "found", "error") if k in rest]
                     detail = _fmt(rest) if rest else ""
                 else:
                     head, rnd, parts, detail = "", "", [], _fmt(step)
@@ -273,7 +317,7 @@ def render(run_dir: Path) -> str:
                 if detail:
                     out.append(f'<tr class=trace-detail-row><td colspan=4><pre>{detail}</pre></td></tr>')
             if len(trace) > 100:
-                out.append(f'<tr><td colspan=4 style="color:#888">… {len(trace)-100} more steps</td></tr>')
+                out.append(f'<tr><td colspan=4 style="color:#888">… {len(trace) - 100} more steps</td></tr>')
             out.append('</table></div>')
 
         out.append('</div></div>')  # case-body, case-card
