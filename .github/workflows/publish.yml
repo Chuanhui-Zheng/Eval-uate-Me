@@ -1,14 +1,12 @@
-# Publishes to PyPI when a GitHub release is published, using PyPI "trusted publishing" (no token stored in GitHub).
-# It does nothing until you set it up: see docs/RELEASING.md. It is skipped unless the repository variable
-# PUBLISH_TO_PYPI is "true", so publishing is always a deliberate decision.
 name: publish
+
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
-  build:
-    if: vars.PUBLISH_TO_PYPI == 'true'
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,20 +16,8 @@ jobs:
       - run: pip install build twine
       - run: python -m build
       - run: twine check dist/*
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-  pypi:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write   # required for trusted publishing
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Upload to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
