@@ -36,6 +36,32 @@ type = "exact_match"
 # model = "openai/gpt-4o-mini"
 # api_key_env = "OPENROUTER_API_KEY"   # name of the environment variable holding your API key
 
+# ── Evaluating a RAG system? ────────────────────────────────────────────────
+# Your agent.py should return a JSON string that includes the retrieved evidence
+# so the judge can verify faithfulness. Without it the judge cannot tell whether
+# the answer is grounded in sources and will score faithfulness very low.
+#
+# Minimal example agent.py:
+#
+#   import json, urllib.request
+#
+#   def ask(input: str) -> str:
+#       # call your RAG system here
+#       resp = call_rag(input)
+#       return json.dumps({
+#           "answer":   resp["answer"],
+#           "status":   resp["status"],       # e.g. "answer" / "no_evidence"
+#           "claims":   resp["claims"],        # ← list of {"text":"...", "citations":["id",...]}
+#           "citations": resp["citations"],    # ← source chunk IDs
+#       })
+#
+# Then reference {{ output }} in your rubric and tell the judge:
+#   - Use "claims[N].citations" to verify faithfulness (has citations = grounded)
+#   - "status" == "answer" or "qualified" means the system gave a substantive response
+#
+# Skipping "claims"/"citations" is the most common cause of artificially low
+# faithfulness scores when evaluating RAG pipelines with llm_judge.
+
 [run]
 repeats = 1                        # raise to 3+ if the target is non-deterministic
 # max_cost_usd = 5                 # stop starting new jobs at this much reported usage.cost_usd
