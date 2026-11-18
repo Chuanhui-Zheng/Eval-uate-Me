@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "eval-uate-me"
+name = "eval_uate_me"
 version = "1.0.0"
 description = "A small, plugin-based eval harness"
 readme = "README.md"
