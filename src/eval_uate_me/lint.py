@@ -81,7 +81,7 @@ def meta_findings(meta: DatasetMeta | None, dataset_path: Path | None = None, pr
     return out
 
 
-def lint(cases: list[Case], min_cases: int = 30, majority_warn: float = 0.8, *, check_meta: bool = False,
+def lint(cases: list[Case], min_cases: int = 50, majority_warn: float = 0.8, *, check_meta: bool = False,
          meta: DatasetMeta | None = None, dataset_path: Path | None = None, privacy_store: str | None = None,
          today: date | None = None, split_dev_fraction: float | None = None,
          split_salt: str = "") -> list[Finding]:

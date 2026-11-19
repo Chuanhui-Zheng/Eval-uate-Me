@@ -22,9 +22,9 @@ def test_lint_flags_each_problem():
 
 def test_lint_constant_answer_and_clean_dataset():
     from eval_uate_me.lint import lint
-    const = [Case(str(i), f"q{i}", "yes", {"tags": ["t"]}) for i in range(40)]
+    const = [Case(str(i), f"q{i}", "yes", {"tags": ["t"]}) for i in range(50)]
     assert [f.code for f in lint(const)] == ["constant_answer"]
-    clean = [Case(str(i), f"question {i}", f"answer{i % 7}", {"tags": ["t"]}) for i in range(40)]
+    clean = [Case(str(i), f"question {i}", f"answer{i % 7}", {"tags": ["t"]}) for i in range(50)]
     assert lint(clean) == []
 
 

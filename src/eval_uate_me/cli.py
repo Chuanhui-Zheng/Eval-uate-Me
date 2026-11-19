@@ -79,7 +79,7 @@ def main(argv: list[str] | None = None) -> int:
 
     n = sub.add_parser("lint", help="check a dataset for problems that make scores meaningless")
     n.add_argument("target", help="a config .toml or a cases .jsonl file")
-    n.add_argument("--min-cases", type=int, default=30)
+    n.add_argument("--min-cases", type=int, default=50)
     n.add_argument("--strict", action="store_true", help="exit 1 if there are any warnings")
     n.add_argument("--json", dest="json_out", default=None)
 

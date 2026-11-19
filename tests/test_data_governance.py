@@ -36,7 +36,7 @@ def test_lint_metadata_findings(tmp_path):
     from datetime import date
     from eval_uate_me.dataset_meta import load_meta
     from eval_uate_me.lint import lint
-    clean = [Case(str(i), f"question {i}", f"answer{i % 7}", {"tags": ["t"]}) for i in range(40)]
+    clean = [Case(str(i), f"question {i}", f"answer{i % 7}", {"tags": ["t"]}) for i in range(50)]
     assert [f.code for f in lint(clean, check_meta=True)] == ["no_metadata"]
     ok = load_meta(_meta(tmp_path, FULL_META))
     assert lint(clean, check_meta=True, meta=ok, privacy_store="full", today=date(2026, 10, 1)) == []
@@ -176,7 +176,7 @@ def test_split_command_requires_split_information(tmp_path, capsys):
 def test_lint_split_findings(tmp_path):
     from eval_uate_me.lint import lint
     big = [Case(f"c{i}", f"question {i}", f"a{i % 9}", {"tags": ["t"], "split": "dev" if i < 20 else "heldout"})
-           for i in range(40)]
+           for i in range(50)]
     assert lint(big) == []
     small = big[:22]                                           # 20 dev, 2 heldout
     codes = {f.code: f for f in lint(small)}
@@ -185,7 +185,7 @@ def test_lint_split_findings(tmp_path):
     assert {"split_leakage"} <= {f.code for f in lint(leaky)}
     mixed = big[:30] + [Case("loose", "zzz", "z", {"tags": ["t"]})]
     assert "split_unassigned" in {f.code for f in lint(mixed)}
-    assert not any(f.code.startswith("split_") for f in lint([Case(str(i), f"q{i}", "x", {"tags": ["t"]}) for i in range(40)]))
+    assert not any(f.code.startswith("split_") for f in lint([Case(str(i), f"q{i}", "x", {"tags": ["t"]}) for i in range(50)]))
     hashed = [Case(f"c{i}", f"question {i}", f"a{i % 9}", {"tags": ["t"]}) for i in range(60)]
     assert not any(f.code == "split_unassigned" for f in lint(hashed, split_dev_fraction=0.5, split_salt="x"))
 
