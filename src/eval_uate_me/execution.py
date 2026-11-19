@@ -44,7 +44,8 @@ class OutputCache:
         self.ns = json.dumps(target_spec, sort_keys=True, default=str)
 
     def _path(self, case: Case, attempt: int) -> Path:
-        raw = json.dumps([self.ns, case.input, attempt], sort_keys=True, default=str)
+        raw = json.dumps([self.ns, case.id, case.input, case.expected, case.metadata, attempt],
+                         sort_keys=True, default=str)
         return self.dir / (hashlib.sha256(raw.encode()).hexdigest() + ".json")
 
     def get(self, case: Case, attempt: int) -> TargetOutput | None:

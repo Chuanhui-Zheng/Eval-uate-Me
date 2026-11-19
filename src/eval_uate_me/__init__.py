@@ -1,4 +1,4 @@
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 from .models import Case, CaseResult, Score, TargetOutput, TraceStep
 from .config import ConfigError, PluginError

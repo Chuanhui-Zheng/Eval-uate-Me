@@ -338,6 +338,7 @@ def run(cfg: Config, resume: Path | None = None, retry_errors: bool = False,
     budget = cfg.max_cost_usd
     # Money already spent by earlier (resumed) jobs; cache hits cost nothing new.
     spent = sum(r.result.usage.get("cost_usd", 0.0) for r in done.values() if not r.result.cached)
+    spent += sum(s.cost_usd for r in done.values() for s in r.scores)
     skipped = 0
     results_file = (out_dir / "results.jsonl").open("a", encoding="utf-8")
 

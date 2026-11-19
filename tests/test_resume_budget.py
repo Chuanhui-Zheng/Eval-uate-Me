@@ -110,3 +110,53 @@ def test_budget_warns_when_target_reports_no_cost(tmp_path):
     f = _budget_cfg(tmp_path, "freebie", "max_cost_usd = 1\n")
     _, summary, _ = run(load_config(f))
     assert summary["incomplete"] == 0 and "could not be enforced" in summary["budget_warning"]
+
+
+# ---- regression: issue #1 — resume forgets grader costs ----
+
+
+def test_resume_includes_grader_costs_in_spent(tmp_path):
+    """Resume must not reset grader costs to zero; a judge budget must not be re-spendable."""
+    @register_grader("paid_grader_resume")
+    class PaidGrader:
+        name = "paid_grader_resume"
+        def grade(self, case, output):
+            return Score(self.name, 1.0, True, cost_usd=1.0)
+
+    import json as _json
+    from eval_uate_me.config import Config
+    cases_path = tmp_path / "cases.jsonl"
+    cases_path.write_text("\n".join(
+        _json.dumps({"id": str(i), "input": str(i)}) for i in range(3)
+    ))
+    cfg = Config(name="grader_budget", dataset=cases_path, target={"type": "echo"},
+                 graders=[{"type": "paid_grader_resume"}], concurrency=1,
+                 max_cost_usd=1.0, output_dir=tmp_path / "runs")
+    # first run: processes one case before budget is exhausted
+    _, first, run_dir = run(cfg)
+    assert first["cost_usd_spent"] >= 1.0
+
+    # resume without raising budget must not start any new jobs
+    _, resumed, _ = run(cfg, resume=run_dir)
+    # spent on resume must reflect previously incurred grader costs, not start from zero
+    assert resumed["cost_usd_spent"] >= first["cost_usd_spent"]
+    assert resumed["incomplete"] == first["incomplete"]
+
+
+# ---- regression: issue #2 — cache key omits case fields used by targets ----
+
+
+def test_cache_does_not_mix_cases_with_same_input_but_different_expected(tmp_path):
+    """oracle target uses case.expected; caching must not share outputs across distinct cases."""
+    import json as _json
+    from eval_uate_me.config import Config
+    cases_path = tmp_path / "cases.jsonl"
+    cases_path.write_text("\n".join(
+        _json.dumps({"id": str(i), "input": "same", "expected": str(i)}) for i in range(3)
+    ))
+    cfg = Config(name="cache_key", dataset=cases_path, target={"type": "oracle"},
+                 graders=[{"type": "exact_match"}], concurrency=1,
+                 cache=True, output_dir=tmp_path / "runs")
+    results, summary, _ = run(cfg)
+    assert summary["pass_rate"] == 1.0, \
+        f"cache mixed distinct cases: outputs were {[(r.case.id, r.result.output) for r in results]}"
