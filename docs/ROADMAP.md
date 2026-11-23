@@ -7,11 +7,12 @@ Status: `done` / `next` / `later`.
 
 The v1.0.1 patch release expanded the CVE benchmark and added an evidence-withholding diagnostic. v1.0.2 added a local
 retrieval-tool loop; v1.0.3 records its first complete live measurement with the held-out-look caveat documented in the results.
-v1.0.4 introduced fuzzy product matching (vendor-prefix-aware), lifting gpt-4o-mini from 69% → 92%, and ran a four-model
-comparison benchmark. v1.0.5 generalised the retrieval loop to multi-turn, added session memory, process/Docker sandbox
-isolation with env_passthrough, an eleventh grader (cve_tool_call), and a second worked example (ticket_triage).
-v1.0.6 added the TraceStep public type, formalised the trace schema, and shipped an interactive JS trace viewer in the HTML report.
-v1.0.7 added a third worked example (support_reply) covering the open-ended generation paradigm with LLM judge grading.
+v1.0.4 introduced fuzzy product matching and a four-model comparison. v1.0.5 generalised the retrieval loop to multi-turn,
+added session memory, process/Docker sandbox isolation with env_passthrough, an eleventh grader (cve_tool_call), and a second
+worked example (ticket_triage). v1.0.6 added the TraceStep public type, formalised the trace schema, and shipped an interactive
+JS trace viewer in the HTML report. v1.0.7 added a third worked example (support_reply) covering open-ended generation with
+LLM judge grading. v1.0.8 adds a LangGraph customer-support evaluation example, removes the implicit mock judge, and expands
+example datasets and instructions. The next planned work is AI-generated evaluation and red-team campaigns with separate reports.
 
 ## v0.4: usable by someone else
 | Item | Why | Status |
@@ -87,9 +88,17 @@ v1.0.7 added a third worked example (support_reply) covering the open-ended gene
 | `TraceStep` TypedDict in public API; formalised trace schema | done in v1.0.6 |
 | Third example: `examples/support_reply/` (open-ended generation, LLM judge) | done in v1.0.7 |
 
+## v1.0.8: more practical evaluation examples (current)
+| Item | Status |
+|---|---|
+| Add a LangGraph customer-support agent with synthetic cases, deterministic contract checks and LLM judging | done |
+| Require an explicit real or local backend for LLM judging | done |
+| Expand example datasets and include case-generation scripts | done |
+
 ## Later
 | Item | Why |
 |---|---|
+| AI-generated evaluation cases and separate red-team campaigns, with evidence-based remediation guidance | Reduce manual case authoring while keeping ordinary evaluation separate from adversarial testing |
 | PyPI publishing | needs maintainer PyPI account (`docs/RELEASING.md` has the workflow) |
 | Outside researcher validation | criterion for full v1.0 sign-off; first external user feedback |
 | Human calibration labels for CVE graders | close the remaining gap between deterministic graders and human judgment |

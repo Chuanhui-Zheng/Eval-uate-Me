@@ -38,9 +38,9 @@ def test_check_flags_unknown_plugin_and_bad_options(tmp_path, capsys):
     f = _write_cfg(tmp_path, GOOD + '[[graders]]\ntype = "llm_judge"\n')
     assert main(["check", str(f)]) == 2
     assert "needs option(s): rubric" in capsys.readouterr().err
-    f = _write_cfg(tmp_path, GOOD + '[[graders]]\ntype = "llm_judge"\nrubric = "r"\n[graders.judge]\ntype = "mok"\n')
+    f = _write_cfg(tmp_path, GOOD + '[[graders]]\ntype = "llm_judge"\nrubric = "r"\n[graders.judge]\ntype = "unknown_backend"\n')
     assert main(["check", str(f)]) == 2
-    assert "unknown judge 'mok'" in capsys.readouterr().err
+    assert "unknown judge 'unknown_backend'" in capsys.readouterr().err
 
 
 def test_check_ok_and_runs_never_start_on_bad_config(tmp_path, capsys):

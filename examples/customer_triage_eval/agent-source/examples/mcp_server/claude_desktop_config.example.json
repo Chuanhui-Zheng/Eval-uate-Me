@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "gmail-triage": {
+      "command": "/ABSOLUTE/PATH/TO/langgraph-customer-triage/.venv/bin/python",
+      "args": ["/ABSOLUTE/PATH/TO/langgraph-customer-triage/examples/mcp_server/server.py"]
+    }
+  }
+}

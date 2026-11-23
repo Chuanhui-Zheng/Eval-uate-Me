@@ -1,5 +1,15 @@
 # Results: the cve_triage example
 
+## Latest local deterministic run (2026-11-23)
+
+`eval.toml` was rerun against the complete 420-case dataset with `--split all`: **420/420 passed**, with no errors. The run
+covered 100 factual CVE cases, 300 prompt-injection variants, and 20 unknown identifiers. This is the deterministic
+reference target using the same frozen snapshot that supplies the gold labels; it validates the graders and harness, not
+LLM accuracy. Run artifacts: [`HTML report`](reports/cve-triage-2026-11-23.html) and
+[`summary`](reports/cve-triage-2026-11-23-summary.json).
+
+The LLM-agent and mutation results below are earlier runs, as labeled in their sections.
+
 Generated from the local deterministic reference target and OpenRouter runs on 2026-11-17 after the post-release dataset
 refresh.
 

@@ -8,7 +8,7 @@ A small, plugin-based harness for repeatable LLM-agent evaluations. Zero runtime
 cases.jsonl ──► Runner ──► Target ──► output ──► Graders ──► results + summary + gate
 ```
 
-**Status:** v1.0.7 is the current stable release. Includes a multi-turn tool-loop retrieval agent, session memory, process/Docker sandbox isolation, and an 11-grader CVE triage benchmark across four models. Zero runtime dependencies; deterministic example runs offline. Not published to PyPI; install from a clone or a release wheel.
+**Status:** v1.0.8 is the current stable release. Includes multi-turn tool-loop retrieval, session memory, process/Docker sandbox isolation, typed traces, interactive trace reports, and worked examples for CVE triage, classification, open-ended support replies, and a LangGraph customer-support agent. Zero runtime dependencies; deterministic examples run offline. Not published to PyPI; install from a clone or a release wheel.
 
 ## The main path in three commands
 
@@ -74,6 +74,10 @@ alongside the deterministic oracle. Demonstrates the harness on a pure-classific
 rather than classify. No single correct answer exists — quality is judged by an LLM judge on three dimensions
 (addresses issue, actionable, appropriate tone). Demonstrates the harness on open-ended generation, the third evaluation
 paradigm alongside factual lookup and classification.
+
+`examples/customer_triage_eval/` evaluates a public LangGraph customer-support agent with 100 synthetic cases, a
+deterministic contract grader, an LLM judge and graph-node traces. Its README explains setup, running the evaluation and
+the limits of the sample results.
 
 ## Platforms
 

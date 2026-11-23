@@ -63,7 +63,7 @@ Commands:
 
 [docs/TUTORIAL.md](TUTORIAL.md) (commands are exercised by tests), [docs/API.md](API.md) (Python API and plugins),
 [docs/VERSIONING.md](VERSIONING.md) (pre-1.0 compatibility policy), [DESIGN.md](DESIGN.md) (trade-offs and limits),
-[docs/ROADMAP.md](ROADMAP.md), [docs/RELEASING.md](RELEASING.md), and the [functional assessment](FUNCTIONAL-ASSESSMENT.md).
+[docs/ROADMAP.md](ROADMAP.md), and [docs/RELEASING.md](RELEASING.md).
 Licensed under the [MIT licence](../LICENSE).
 
 **Status:** v1.0.0 ships the worked example in `examples/cve_triage`, a public-data CVE triage reference target. The
@@ -186,11 +186,10 @@ assert result.pass_rate >= 0.9
 ## Judge backends
 
 `anthropic` (plain HTTPS, key from `ANTHROPIC_API_KEY`), `openai_compat` (OpenAI, Groq, Gemini's compatible endpoint, Ollama, vLLM, LM Studio:
-set `base_url`, `model`, `api_key_env`; a `localhost` URL counts as local) and `mock` (offline). Every judge reports tokens and, when
+set `base_url`, `model`, `api_key_env`; a `localhost` URL counts as local). Every judge reports tokens and, when
 given `price_in_per_mtok` / `price_out_per_mtok`, cost. `llm_judge` also takes `dimensions = {...}` for per-dimension scores, and
 `run.judge_cache = true` caches replies on disk keyed by judge, prompt version and full prompt (`--cache` does the same for
-`pairwise` and `judge-check`). Prompt versions are recorded in the manifest. **Only the mock judge and a fake server have been
-exercised; no live model run has happened.**
+`pairwise` and `judge-check`). Prompt versions are recorded in the manifest. **Tests use local fake backends; production configurations must use a real or local model backend.**
 
 ## Meta-evaluation, in depth (`meta-eval`)
 

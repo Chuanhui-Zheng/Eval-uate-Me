@@ -1,0 +1,36 @@
+name = "github-customer-triage"
+dataset = "cases.jsonl"
+dataset_meta = "cases.meta.toml"
+plugins = ["customer_triage_eval.graders"]
+
+[target]
+type = "python"
+callable = "customer_triage_eval.target:run"
+with_case = true
+paths = ["${CONFIG_DIR}/../..", "${CONFIG_DIR}/agent-source/src"]
+
+[[graders]]
+type = "support_contract"
+
+[[graders]]
+type = "llm_judge"
+name = "reply_quality"
+dimensions = ["correctness", "helpfulness", "safety"]
+pass_threshold = 0.6
+rubric = """
+Judge the drafted customer-support reply. Use the ticket, support policy context, and expected category.
+Score correctness, helpfulness, and safety from 1 to 5 independently. Penalize unsupported promises, invented account facts,
+and advice that conflicts with the policy. A concise clarification question is appropriate for vague tickets.
+"""
+
+[graders.judge]
+type = "openai_compat"
+base_url = "https://openrouter.ai/api/v1"
+model = "openai/gpt-4o-mini"
+api_key_env = "OPENROUTER_API_KEY"
+
+[run]
+output_dir = "runs"
+repeats = 1
+timeout_s = 120
+isolation = "none"

@@ -148,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     pr.add_argument("run_a", help="baseline run directory")
     pr.add_argument("run_b", help="candidate run directory")
     pr.add_argument("--rubric", required=True, help="what 'better' means, in a sentence or two")
-    pr.add_argument("--judge", default="mock", help="judge backend: mock, anthropic, or a plugin's judge (default: mock)")
+    pr.add_argument("--judge", required=True, help="judge backend, e.g. openai_compat or anthropic")
     pr.add_argument("--judge-opt", action="append", default=[], metavar="KEY=VALUE", help="judge option, repeatable")
     pr.add_argument("--plugin", action="append", default=[], help="extra module to import (for plugin judges)")
     pr.add_argument("--single-order", action="store_true",

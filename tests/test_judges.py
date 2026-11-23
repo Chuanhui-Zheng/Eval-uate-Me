@@ -21,24 +21,24 @@ def test_panel_aggregation_rules():
 def test_single_judge_keeps_the_old_behaviour_and_panel_validation():
     from eval_uate_me.config import ConfigError
     from eval_uate_me.graders import LLMJudge
-    s = LLMJudge(rubric="r", judge={"type": "mock", "reply": '{"score": 4, "reason": "ok"}'}).grade(
+    s = LLMJudge(rubric="r", judge={"type": "test_scripted", "reply": '{"score": 4, "reason": "ok"}'}).grade(
         Case("a", "q", "ref"), TargetOutput(output="x"))
     assert s.passed and s.reason == "4/5: ok"
     with pytest.raises(ConfigError, match="either 'judge'"):
-        LLMJudge(rubric="r", judge={"type": "mock"}, judges=[{"type": "mock"}])
+        LLMJudge(rubric="r", judge={"type": "test_scripted"}, judges=[{"type": "test_scripted"}])
     with pytest.raises(ConfigError, match="is empty"):
         LLMJudge(rubric="r", judges=[])
     with pytest.raises(ConfigError, match="aggregate must be one of"):
-        LLMJudge(rubric="r", judges=[{"type": "mock"}], aggregate="average")
+        LLMJudge(rubric="r", judges=[{"type": "test_scripted"}], aggregate="average")
 
 
 def test_panel_network_flag_and_failing_judge_fails_the_case(tmp_path):
     from eval_uate_me.graders import LLMJudge
-    assert LLMJudge(rubric="r", judges=[{"type": "mock"}, {"type": "mock"}]).network is False
-    assert LLMJudge(rubric="r", judges=[{"type": "mock"}, {"type": "anthropic"}]).network is True
+    assert LLMJudge(rubric="r", judges=[{"type": "test_scripted"}, {"type": "test_scripted"}]).network is False
+    assert LLMJudge(rubric="r", judges=[{"type": "test_scripted"}, {"type": "anthropic"}]).network is True
     broken = write_eval(tmp_path, [{"id": "1", "input": "a", "expected": "a"}], graders=(
-        '[[graders]]\ntype = "llm_judge"\nrubric = "r"\n[[graders.judges]]\ntype = "mock"\n'
-        '[[graders.judges]]\ntype = "mock"\nreply = "not json"'))
+        '[[graders]]\ntype = "llm_judge"\nrubric = "r"\n[[graders.judges]]\ntype = "test_scripted"\n'
+        '[[graders.judges]]\ntype = "test_scripted"\nreply = "not json"'))
     results, _, _ = run(load_config(broken))
     assert not results[0].passed and "grader error" in results[0].scores[0].reason      # never guesses
 
@@ -46,13 +46,13 @@ def test_panel_network_flag_and_failing_judge_fails_the_case(tmp_path):
 def test_panel_from_config_end_to_end(tmp_path, capsys):
     f = write_eval(tmp_path, [{"id": "1", "input": "a", "expected": "a"}], graders=(
         '[[graders]]\ntype = "llm_judge"\nrubric = "matches the reference"\naggregate = "unanimous"\n'
-        '[[graders.judges]]\ntype = "mock"\nlabel = "strict"\n[[graders.judges]]\ntype = "mock"\nlabel = "second"'))
+        '[[graders.judges]]\ntype = "test_scripted"\nlabel = "strict"\n[[graders.judges]]\ntype = "test_scripted"\nlabel = "second"'))
     assert main(["check", str(f)]) == 0
     results, _, _ = run(load_config(f))
     assert results[0].passed and "unanimous pass (2/2 judges pass; strict=5, second=5)" in results[0].scores[0].reason
     f.write_text(f.read_text().replace('aggregate = "unanimous"', 'aggregate = "unamimous"'))
     assert main(["check", str(f)]) == 2 and "aggregate must be one of" in capsys.readouterr().err
-    f.write_text(f.read_text().replace('type = "mock"\nlabel = "second"', 'type = "mok"\nlabel = "second"'))
+    f.write_text(f.read_text().replace('type = "test_scripted"\nlabel = "second"', 'type = "unknown_backend"\nlabel = "second"'))
     assert main(["check", str(f)]) == 2
 
 
@@ -61,7 +61,7 @@ def test_selftest_catches_a_panel_that_always_approves(tmp_path):
     from eval_uate_me.selftest import selftest
     cases = [Case(str(i), f"q{i}", f"answer-{i}") for i in range(5)]
     lax = _panel(5, 5, 5)
-    good = LLMJudge(rubric="r", judges=[{"type": "mock"}, {"type": "mock"}, {"type": "mock"}], name="panel_ref")
+    good = LLMJudge(rubric="r", judges=[{"type": "test_scripted"}, {"type": "test_scripted"}, {"type": "test_scripted"}], name="panel_ref")
     verdicts = {v.grader: v.verdict for v in selftest(cases, [good, lax]).verdicts}
     assert verdicts == {"panel_ref": "ok", "llm_judge": "too_lenient"}
 
@@ -81,22 +81,20 @@ def test_parse_pair_reply_and_sign_test():
 
 
 def test_pairwise_finds_the_better_run_and_cancels_position(tmp_path):
-    from eval_uate_me.judges import MockJudge
     from eval_uate_me.pairwise import compare_runs
     a, b = _pw_runs(tmp_path, *_right_wrong(12))
-    r = compare_runs(a, b, MockJudge(), "matches the reference")
+    r = compare_runs(a, b, DeterministicJudge(), "matches the reference")
     assert (r.b_wins, r.a_wins, r.ties, r.inconsistent, r.errors) == (12, 0, 0, 0, 0)
     assert r.win_rate_b == 1.0 and r.p_value == pytest.approx(2 / 4096) and r.calls == 24     # both orders
     assert r.position_a_rate == 0.5 and r.warnings == []                                      # B was first once, second once
-    assert compare_runs(b, a, MockJudge(), "r").a_wins == 12                                   # swapping runs swaps winners
+    assert compare_runs(b, a, DeterministicJudge(), "r").a_wins == 12                         # swapping runs swaps winners
 
 
 def test_pairwise_skips_identical_outputs_and_counts_calls(tmp_path):
-    from eval_uate_me.judges import MockJudge
     from eval_uate_me.pairwise import compare_runs
     calls = []
 
-    class Counting(MockJudge):
+    class Counting(DeterministicJudge):
         def complete(self, prompt):
             calls.append(1)
             return super().complete(prompt)
@@ -128,13 +126,13 @@ def test_pairwise_exposes_a_position_biased_judge(tmp_path):
 
 def test_pairwise_single_order_budget_and_errors(tmp_path):
     from eval_uate_me.config import ConfigError
-    from eval_uate_me.judges import Judge, MockJudge
+    from eval_uate_me.judges import Judge
     from eval_uate_me.pairwise import compare_runs
     a, b = _pw_runs(tmp_path, *_right_wrong(10))
-    r = compare_runs(a, b, MockJudge(), "r", both_orders=False, seed=3)
+    r = compare_runs(a, b, DeterministicJudge(), "r", both_orders=False, seed=3)
     assert r.calls == 10 and r.b_wins == 10                                                # half the calls
     with pytest.raises(ConfigError, match="20 judge calls \\(limit 5\\)"):
-        compare_runs(a, b, MockJudge(), "r", max_calls=5)
+        compare_runs(a, b, DeterministicJudge(), "r", max_calls=5)
     n = {"k": 0}
 
     class Flaky(Judge):
@@ -144,7 +142,7 @@ def test_pairwise_single_order_budget_and_errors(tmp_path):
             n["k"] += 1
             if n["k"] == 1:                      # only the very first call fails -> exactly one pair is lost
                 raise RuntimeError("rate limited")
-            return MockJudge().complete(prompt)
+            return DeterministicJudge().complete(prompt)
 
     r = compare_runs(a, b, Flaky(), "r")
     assert r.errors == 1 and r.b_wins == 9 and any("rate limited" in w for w in r.warnings)
@@ -152,27 +150,29 @@ def test_pairwise_single_order_budget_and_errors(tmp_path):
 
 def test_pairwise_cli_end_to_end_and_refusals(tmp_path, capsys):
     a, b = _pw_runs(tmp_path, *_right_wrong(8))
-    assert main(["pairwise", str(a), str(b), "--rubric", "matches the reference", "--json", str(tmp_path / "pw.json")]) == 0
+    assert main(["pairwise", str(a), str(b), "--rubric", "matches the reference", "--judge", "test_scripted",
+                 "--json", str(tmp_path / "pw.json")]) == 0
     out = capsys.readouterr().out
     assert "8 pairs compared (16 judge calls)" in out and "B wins 8, A wins 0" in out and "p = 0.008" in out
     data = json.loads((tmp_path / "pw.json").read_text())
     assert data["b_wins"] == 8 and len(data["pairs"]) == 8
     assert main(["pairwise", str(a), str(b), "--rubric", "r", "--judge", "nope"]) == 2
     assert "unknown judge 'nope'" in capsys.readouterr().err
-    assert main(["pairwise", str(a), str(b), "--rubric", "r", "--judge-opt", "oops"]) == 2
-    assert main(["pairwise", str(a), str(b), "--rubric", "r", "--max-calls", "3"]) == 2
-    assert main(["pairwise", str(a), str(b), "--rubric", "r", "--judge-opt", 'reply={"winner": "tie"}']) == 0
+    assert main(["pairwise", str(a), str(b), "--rubric", "r", "--judge", "test_scripted", "--judge-opt", "oops"]) == 2
+    assert main(["pairwise", str(a), str(b), "--rubric", "r", "--judge", "test_scripted", "--max-calls", "3"]) == 2
+    assert main(["pairwise", str(a), str(b), "--rubric", "r", "--judge", "test_scripted",
+                 "--judge-opt", 'reply={"winner": "tie"}']) == 0
     assert "ties 8" in capsys.readouterr().out
     priv = _labelled_run(tmp_path / "priv" if (tmp_path / "priv").mkdir() is None else tmp_path,
                          privacy='[privacy]\nstore = "scores_only"\n')
-    assert main(["pairwise", str(priv), str(b), "--rubric", "r"]) == 2 and "nothing to compare" in capsys.readouterr().err
+    assert main(["pairwise", str(priv), str(b), "--rubric", "r", "--judge", "test_scripted"]) == 2 and "nothing to compare" in capsys.readouterr().err
 
 
 # ---- judge-check (bias probes) ----
 
 
 def test_judge_check_passes_a_sound_judge(tmp_path, capsys):
-    f = _probe_cfg(tmp_path, "mock")
+    f = _probe_cfg(tmp_path, "test_scripted")
     assert main(["judge-check", str(f), "--json", str(tmp_path / "jc.json")]) == 0
     out = capsys.readouterr().out
     assert "RESULT: no concerns on these probes" in out and "12 cases, 3 repeats" in out
@@ -200,7 +200,7 @@ def test_judge_check_flags_each_known_bias(tmp_path, capsys, judge_type, expecte
 
 
 def test_judge_check_guards_and_errors(tmp_path, capsys):
-    f = _probe_cfg(tmp_path, "mock")
+    f = _probe_cfg(tmp_path, "test_scripted")
     assert main(["judge-check", str(f), "--max-calls", "20"]) == 2
     assert "judge calls (limit 20)" in capsys.readouterr().err
     assert main(["judge-check", str(f), "--sample", "4", "--repeats", "1", "--max-calls", "40"]) == 0     # 4*(1+4)+8 = 28
@@ -211,7 +211,7 @@ def test_judge_check_guards_and_errors(tmp_path, capsys):
     assert main(["judge-check", str(f), "--grader", "other"]) == 2
     same = write_eval(tmp_path / "s" if (tmp_path / "s").mkdir() is None else tmp_path,
                       [{"id": "1", "input": "a", "expected": "x"}, {"id": "2", "input": "b", "expected": "x"}],
-                      graders='[[graders]]\ntype = "llm_judge"\nrubric = "r"')
+                      graders='[[graders]]\ntype = "llm_judge"\nrubric = "r"\n[graders.judge]\ntype = "test_scripted"')
     assert main(["judge-check", str(same)]) == 2 and "at least two different references" in capsys.readouterr().err
     capsys.readouterr()
 
@@ -219,12 +219,12 @@ def test_judge_check_guards_and_errors(tmp_path, capsys):
 def test_judge_check_uses_the_whole_panel_for_grading(tmp_path, capsys):
     cases = [{"id": f"c{i}", "input": f"q{i}", "expected": f"answer-{i}"} for i in range(8)]
     f = write_eval(tmp_path, cases, graders=(
-        '[[graders]]\ntype = "llm_judge"\nrubric = "r"\n[[graders.judges]]\ntype = "mock"\n'
+        '[[graders]]\ntype = "llm_judge"\nrubric = "r"\n[[graders.judges]]\ntype = "test_scripted"\n'
         '[[graders.judges]]\ntype = "probe_lengthy"\n[[graders.judges]]\ntype = "probe_lengthy"'))
     assert main(["judge-check", str(f)]) == 1             # two of three judges are length-biased, so the majority is
     out = capsys.readouterr().out
     assert "length_rescues_wrong" in _concerns(out)
-    assert "panel: mock1, probe_lengthy2, probe_lengthy3" in out
+    assert "panel: test_scripted1, probe_lengthy2, probe_lengthy3" in out
 
 
 # ---- the Anthropic judge's HTTP client, against a local fake server (no real API is contacted) ----

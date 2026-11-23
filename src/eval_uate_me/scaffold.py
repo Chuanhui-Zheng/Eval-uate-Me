@@ -30,7 +30,7 @@ type = "exact_match"
 # safety: no harmful content?
 # """
 #
-# [graders.judge]                  # the LLM used to score
+# [graders.judge]                  # the LLM used to score (required; no fake/mock judge)
 # type = "openai_compat"
 # base_url = "https://openrouter.ai/api/v1"
 # model = "openai/gpt-4o-mini"

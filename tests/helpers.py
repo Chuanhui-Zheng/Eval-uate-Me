@@ -1,6 +1,7 @@
 """Shared test helpers: config writers, registered test targets and graders, fixtures-as-functions.
 Test files do `from helpers import *`; __all__ lists every top-level name (including underscore ones)."""
 import json
+import re
 
 import sys
 
@@ -8,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from eval_uate_me import (Case, Grader, Score, Target, TargetOutput, register_grader, register_judge,
+from eval_uate_me import (Case, Grader, Judge, Score, Target, TargetOutput, register_grader, register_judge,
                          register_target)
 
 from eval_uate_me.cli import main
@@ -20,6 +21,31 @@ from eval_uate_me.graders import Contains, ExactMatch, Regex
 from eval_uate_me.runner import run
 
 COPY_STDIN = "import sys; sys.stdout.write(sys.stdin.read())"
+
+@register_judge("test_scripted")
+class DeterministicJudge(Judge):
+    """Test-only judge backend; production users must configure a real model backend."""
+    network = False
+
+    def __init__(self, reply=None):
+        self.reply = reply
+
+    def complete(self, prompt):
+        if self.reply is not None:
+            return self.reply
+        from eval_uate_me.judges import _between
+        if "<response_a>" in prompt:
+            ref = _between("reference", prompt).strip()
+            a_has = bool(ref) and ref in _between("response_a", prompt)
+            b_has = bool(ref) and ref in _between("response_b", prompt)
+            winner = "A" if a_has and not b_has else "B" if b_has and not a_has else "tie"
+            return json.dumps({"winner": winner, "reason": "reference found"})
+        ref, out = _between("reference", prompt).strip(), _between("output", prompt)
+        ok = bool(ref) and ref in out
+        dims = re.findall(r'<dimension name="([^"]+)">', prompt)
+        if dims:
+            return json.dumps({d: {"score": 5 if ok else 1, "reason": "reference found" if ok else "reference missing"} for d in dims})
+        return json.dumps({"score": 5 if ok else 1, "reason": "reference found" if ok else "reference missing"})
 
 def write_eval(tmp_path: Path, cases, target='type = "echo"', graders='[[graders]]\ntype = "exact_match"'):
     (tmp_path / "c.jsonl").write_text("\n".join(json.dumps(c) for c in cases))
@@ -180,7 +206,7 @@ def _two_systems(tmp_path):
 
 def _panel(*scores, aggregate="majority", threshold=0.75):
     from eval_uate_me.graders import LLMJudge
-    judges = [{"type": "mock", "reply": json.dumps({"score": sc, "reason": f"r{k}"}), "label": f"j{k}"}
+    judges = [{"type": "test_scripted", "reply": json.dumps({"score": sc, "reason": f"r{k}"}), "label": f"j{k}"}
               for k, sc in enumerate(scores, 1)]
     return LLMJudge(rubric="r", judges=judges, aggregate=aggregate, pass_threshold=threshold)
 
@@ -442,4 +468,4 @@ def _ok(text):
     return 200, {"content": [{"type": "text", "text": text}]}
 
 
-__all__ = ['AsyncSleeper', 'COPY_STDIN', 'Case', 'Contains', 'ExactMatch', 'FULL_META', 'GAUGE', 'GOOD', 'Grader', 'HIST_FAIL', 'HistTarget', 'PW_OUTPUTS', 'Path', 'PwTarget', 'ReadsAFile', 'Regex', 'SECRET', 'Score', 'StructContent', 'StructForm', 'StructuredRef', 'SuffixBang', 'TESTS_DIR', 'Target', 'TargetOutput', 'Traced', '_FakeAPI', '_Gauge', '_async_cfg', '_budget_cfg', '_concerns', '_costly_target', '_counting_target', '_fill', '_grade', '_hist_run', '_ids', '_iso_cfg', '_labelled_run', '_leaky_target', '_meta', '_meta_cfg', '_mixed_run', '_ok', '_panel', '_plugin_cfg', '_plugin_module', '_privacy_cfg', '_probe_cfg', '_probe_judges', '_pw_runs', '_read_sheet', '_right_wrong', '_selftest_cfg', '_sheet_with', '_split_cfg', '_split_run_cfg', '_struct_cfg', '_two_label_runs', '_two_systems', '_write_cfg', 'json', 'load_cases', 'load_config', 'main', 'pytest', 'register_grader', 'register_judge', 'register_target', 'run', 'sys', 'write_eval']
+__all__ = ['AsyncSleeper', 'COPY_STDIN', 'Case', 'Contains', 'DeterministicJudge', 'ExactMatch', 'FULL_META', 'GAUGE', 'GOOD', 'Grader', 'HIST_FAIL', 'HistTarget', 'PW_OUTPUTS', 'Path', 'PwTarget', 'ReadsAFile', 'Regex', 'SECRET', 'Score', 'StructContent', 'StructForm', 'StructuredRef', 'SuffixBang', 'TESTS_DIR', 'Target', 'TargetOutput', 'Traced', '_FakeAPI', '_Gauge', '_async_cfg', '_budget_cfg', '_concerns', '_costly_target', '_counting_target', '_fill', '_grade', '_hist_run', '_ids', '_iso_cfg', '_labelled_run', '_leaky_target', '_meta', '_meta_cfg', '_mixed_run', '_ok', '_panel', '_plugin_cfg', '_plugin_module', '_privacy_cfg', '_probe_cfg', '_probe_judges', '_pw_runs', '_read_sheet', '_right_wrong', '_selftest_cfg', '_sheet_with', '_split_cfg', '_split_run_cfg', '_struct_cfg', '_two_label_runs', '_two_systems', '_write_cfg', 'json', 'load_cases', 'load_config', 'main', 'pytest', 'register_grader', 'register_judge', 'register_target', 'run', 'sys', 'write_eval']

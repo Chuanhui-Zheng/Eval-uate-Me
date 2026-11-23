@@ -103,6 +103,6 @@ def test_meta_eval_honours_isolation(tmp_path, monkeypatch, capsys):
 def test_plugin_options_may_be_called_name_or_kind(tmp_path):
     """Regression: registry helpers took a parameter called `name`, so a plugin option of that name collided."""
     f = write_eval(tmp_path, [{"id": "1", "input": "a", "expected": "a"}], graders=(
-        '[[graders]]\ntype = "llm_judge"\nname = "my_judge"\nrubric = "r"\n[graders.judge]\ntype = "mock"'))
+        '[[graders]]\ntype = "llm_judge"\nname = "my_judge"\nrubric = "r"\n[graders.judge]\ntype = "test_scripted"'))
     results, _, _ = run(load_config(f))
     assert results[0].scores[0].grader == "my_judge"

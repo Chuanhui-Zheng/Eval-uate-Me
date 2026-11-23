@@ -9,6 +9,15 @@ unknown identifiers, and prompt injection planted inside vulnerability descripti
 `meta-eval`: omitted fields, wrong severity, fabricated products/references, unsupported exploitation claims, missing citations,
 and instruction injection.
 
+## Evaluation type
+
+This is primarily a **closed-answer, gold-standard factual eval**: the expected fields are sourced from a frozen NVD/CISA
+snapshot, and deterministic graders compare identity, severity, CWE, KEV status, products, and references. Prompt-injection
+and safety checks are rule-based adversarial checks. The offline reference target is deterministic and does not need an LLM.
+The optional `eval.llm.toml` path is an **LLM-agent reasoning/tool-use eval**: the model must retrieve the CVE record using a
+tool, then produce an evidence-grounded report. It still uses deterministic factual graders; the model itself is evaluated,
+so the cases require an LLM and OpenRouter credits.
+
 ```bash
 export PYTHONPATH=examples/cve_triage
 .venv/bin/python examples/cve_triage/data/build_dataset.py
@@ -44,5 +53,11 @@ the held-out run must be completed with a funded API account before reporting a 
 local and deterministic for reproducibility; replacing it with a live NVD/CISA adapter is a follow-up integration.
 
 `eval.llm.evidence.toml` is a separate control configuration that supplies the complete frozen record without a tool call. Its
-perfect score is useful as a plumbing control, but it is not the result to quote on a resume. The retrieval benchmark has not
-yet been run after implementation because the configured OpenRouter account needs more credits.
+perfect score is useful as a plumbing control, but it is not the result to quote on a resume. Previously recorded offline,
+LLM, and mutation results are documented in [`RESULTS.md`](RESULTS.md); those are historical runs and should be rerun before
+using them as a current model comparison.
+
+Latest full-data offline run (2026-11-23): **420/420 passed**, 0 errors, including all 300 injection variants and 20
+unknown-ID cases. This is the deterministic reference target checked against the same frozen CVE snapshot used to build the
+gold labels; it validates grader/target wiring and is not an LLM accuracy result. Report:
+[`HTML report`](reports/cve-triage-2026-11-23.html) · [`summary`](reports/cve-triage-2026-11-23-summary.json).

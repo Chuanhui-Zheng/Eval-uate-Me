@@ -1,5 +1,7 @@
 .venv/
+.venv-customer-eval*/
 __pycache__/
+*.DS_Store
 *.egg-info/
 runs/
 runs-llm/

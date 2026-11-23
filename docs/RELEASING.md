@@ -1,5 +1,30 @@
 # Releasing
 
+## v1.0.8 release notes
+
+v1.0.8 adds a LangGraph customer-support agent evaluation example and makes LLM judging explicit.
+
+**`examples/customer_triage_eval/` — evaluate an existing LangGraph agent.** The example bundles a public customer-support
+agent, an adapter that returns its classification, draft reply, confidence and graph trace, 100 synthetic test cases, a
+deterministic support-contract grader and an LLM judge for correctness, helpfulness and safety. The README includes setup,
+run commands and an observed run with its limitations: two runtime errors, synthetic paraphrase cases and an uncalibrated
+LLM judge.
+
+**No implicit mock LLM judge.** The runtime no longer registers the deterministic mock backend. `llm_judge` and `pairwise`
+require a configured real or local backend, while scripted deterministic judges are confined to the test suite. This avoids
+mistaking test behavior for a meaningful evaluation score.
+
+**Expanded example data and instructions.** The echo, plugin, ticket-triage and support-reply datasets and README files now
+include reproducible case-generation scripts and broader examples. Tutorial and reference docs clarify when to use
+deterministic graders versus semantic LLM judging.
+
+**Recorded evaluation artifacts.** Each worked example includes a checked-in HTML report and machine-readable summary for
+its latest run, so the documented results are available from the release source rather than only from a local ignored
+`runs/` directory.
+
+LLM calls may incur provider charges. The added support dataset is synthetic and does not establish real-world customer
+support accuracy.
+
 ## v1.0.7 release notes
 
 v1.0.7 adds the third worked example, completing the trilogy of evaluation paradigms the harness supports.
@@ -13,7 +38,7 @@ The example includes 30 cases with structured rubrics (`must_cover`, `must_not`)
 `metadata.context`, a template-based oracle for selftest and meta-eval, four deliberate flaws (`dismissive`,
 `wrong_tone`, `empty`, `no_action`) for mutation testing, and an LLM target (`eval.llm.toml`) for benchmarking real
 models. The judge is configured to use `openai/gpt-4o-mini` via OpenRouter; any judge supported by the harness
-(including `anthropic` or a mock) can be substituted.
+(including `anthropic` or another configured judge backend) can be substituted.
 
 No LLM benchmark results are included in this release — the LLM judge introduces cost per case and results depend on
 the judge model chosen. Run `eval_uate_me run eval.llm.toml` with `OPENROUTER_API_KEY` set to produce results.

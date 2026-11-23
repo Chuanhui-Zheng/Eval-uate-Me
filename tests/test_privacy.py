@@ -78,8 +78,8 @@ def test_local_only_blocks_networked_judge_and_warns_on_opaque_components(tmp_pa
     assert not (tmp_path / "runs").exists()
 
     f.write_text('dataset = "c.jsonl"\n[target]\ntype = "echo"\n[[graders]]\ntype = "llm_judge"\nrubric = "r"\n'
-                 '[graders.judge]\ntype = "mock"\n[privacy]\nlocal_only = true\n')
-    assert main(["check", str(f)]) == 0                                  # mock judge is local
+                 '[graders.judge]\ntype = "test_scripted"\n[privacy]\nlocal_only = true\n')
+    assert main(["check", str(f)]) == 0                                  # test backend is local
 
     f.write_text('dataset = "c.jsonl"\n[target]\ntype = "command"\ncommand = [\'' + sys.executable + '\', \'-c\', \'' + COPY_STDIN + '\']\n'
                  '[[graders]]\ntype = "exact_match"\n[privacy]\nlocal_only = true\n')

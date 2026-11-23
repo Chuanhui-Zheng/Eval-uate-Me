@@ -1,0 +1,8 @@
+name = "customer-triage-demo-cases"
+version = "1.0"
+description = "Three hand-authored cases based on the public demo's categories, policies, and confidence routing."
+source = "Derived from the checked-out public repository's README, knowledge_base.py, and triage_agent.py"
+retrieved = 2026-11-23
+license = "MIT"
+contains_personal_data = false
+redistributable = true

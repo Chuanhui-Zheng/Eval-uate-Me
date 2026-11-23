@@ -1,0 +1,1082 @@
+<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>ticket-triage</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:14px/1.6 -apple-system,system-ui,'Segoe UI',sans-serif;background:#f5f6fa;color:#1a1a2e;min-height:100vh}
+.page{max-width:1080px;margin:0 auto;padding:2rem 1.5rem}
+h1{font-size:1.5rem;font-weight:700;color:#1a1a2e;margin-bottom:.25rem}
+h2{font-size:1rem;font-weight:600;color:#444;margin:2rem 0 .75rem;text-transform:uppercase;letter-spacing:.05em}
+.meta{color:#888;font-size:.82rem;margin-bottom:1.5rem}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;margin:1.25rem 0}
+.card{background:#fff;border:1px solid #e8eaed;border-radius:12px;padding:.9rem 1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card-label{font-size:.75rem;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem}
+.card-value{font-size:1.5rem;font-weight:700;color:#1a1a2e;line-height:1}
+.card.good .card-value{color:#0a7d33}
+.card.bad .card-value{color:#c0392b}
+.card.neutral .card-value{color:#2563eb}
+
+.dims{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0 1.5rem}
+.dim-row{display:flex;align-items:center;gap:.75rem}
+.dim-label{width:140px;font-size:.82rem;color:#555;text-align:right;flex-shrink:0}
+.dim-bar-wrap{flex:1;background:#eef0f4;border-radius:99px;height:10px;overflow:hidden}
+.dim-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,#2563eb,#7c3aed);transition:width .3s}
+.dim-score{width:36px;font-size:.82rem;font-weight:600;color:#444;text-align:right}
+
+.jump-links{display:flex;flex-wrap:wrap;gap:.35rem;margin:.5rem 0 1.5rem}
+.jump-link{font-size:.78rem;padding:.2rem .6rem;border-radius:99px;background:#fef2f2;color:#c0392b;text-decoration:none;border:1px solid #fecaca}
+.jump-link:hover{background:#fee2e2}
+
+.privacy-banner{background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:.6rem 1rem;font-size:.82rem;color:#78350f;margin:1rem 0}
+
+.section-box{background:#fff;border:1px solid #e8eaed;border-radius:12px;overflow:hidden;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.section-box table{margin:0}
+table{width:100%;border-collapse:collapse}
+th{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#888;padding:.5rem .75rem;border-bottom:2px solid #eef0f4;text-align:left}
+td{padding:.45rem .75rem;border-bottom:1px solid #f0f0f4;font-size:.85rem;vertical-align:top}
+tr:last-child td{border-bottom:none}
+
+.case-card{background:#fff;border:1px solid #e8eaed;border-radius:12px;margin-bottom:.6rem;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.case-header{display:flex;align-items:center;gap:.75rem;padding:.7rem 1rem;cursor:pointer;user-select:none}
+.case-header:hover{background:#fafbfc}
+.badge{font-size:.72rem;font-weight:700;padding:.2rem .55rem;border-radius:99px;letter-spacing:.03em}
+.badge.pass{background:#dcfce7;color:#15803d}
+.badge.fail{background:#fee2e2;color:#b91c1c}
+.case-id{font-weight:600;font-size:.88rem;color:#1a1a2e}
+.case-latency{margin-left:auto;font-size:.78rem;color:#aaa}
+.case-body{padding:.75rem 1rem 1rem;border-top:1px solid #f0f0f4;display:none}
+.case-card.open .case-body{display:block}
+.case-card.open .case-header{background:#fafbfc}
+
+.field-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#888;margin:.75rem 0 .3rem}
+.field-label:first-child{margin-top:0}
+pre{background:#1e1e2e;color:#cdd6f4;padding:.85rem 1rem;border-radius:8px;overflow-x:auto;font-size:.8rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+
+.score-row{display:flex;align-items:center;gap:.6rem;padding:.3rem 0}
+.score-name{width:170px;font-size:.82rem;color:#555;flex-shrink:0}
+.score-mini-bar{flex:1;background:#eef0f4;border-radius:99px;height:7px;overflow:hidden}
+.score-mini-fill{height:100%;border-radius:99px}
+.score-mini-fill.pass{background:#22c55e}
+.score-mini-fill.fail{background:#ef4444}
+.score-val{width:32px;font-size:.78rem;font-weight:600;text-align:right}
+.score-reason{font-size:.78rem;color:#888;margin-top:.15rem;padding-left:170px}
+.error-box{background:#fff1f1;border:1px solid #fecaca;border-radius:8px;padding:.6rem .9rem;font-size:.82rem;color:#b91c1c;margin:.5rem 0}
+.case-facts{font-size:.78rem;color:#888;margin:.4rem 0}
+
+.trace-wrap{margin-top:.75rem;overflow:hidden;border-radius:8px;border:1px solid #eef0f4}
+.trace-wrap table{margin:0}
+.trace-step-row{cursor:pointer}
+.trace-step-row td:first-child{color:#2563eb;font-weight:600}
+.trace-step-row:hover td{background:#fafbfc}
+.trace-detail-row{display:none}
+.trace-step-row.open+.trace-detail-row{display:table-row}
+.trace-detail-row td{background:#f8f9fb;padding:.5rem 1rem}
+</style><div class=page><h1>ticket-triage</h1><p class=meta>2026-11-23T05:04:47.578875+00:00 · git 829f0bd236</p><div class=cards><div class="card neutral"><div class=card-label>Pass rate</div><div class=card-value>64%</div></div><div class="card neutral"><div class=card-label>95 % CI</div><div class=card-value>55%–73%</div></div><div class="card neutral"><div class=card-label>Cases</div><div class=card-value>100</div></div><div class="card good"><div class=card-label>Errors</div><div class=card-value>0</div></div><div class="card neutral"><div class=card-label>p50 latency</div><div class=card-value>0.00s</div></div></div><h2>Failure reasons</h2><div class=section-box><table><tr><th>reason</th><th>attempts</th></tr><tr><td>failed:ticket_urgency</td><td>28</td></tr><tr><td>failed:ticket_category</td><td>10</td></tr></table></div><h2>Jump to failures</h2><div class=jump-links><a class=jump-link href="#case-0">tt-005</a><a class=jump-link href="#case-1">tt-006</a><a class=jump-link href="#case-2">tt-007</a><a class=jump-link href="#case-3">tt-012</a><a class=jump-link href="#case-4">tt-021</a><a class=jump-link href="#case-5">tt-023</a><a class=jump-link href="#case-6">tt-027</a><a class=jump-link href="#case-7">tt-028</a><a class=jump-link href="#case-8">tt-030</a><a class=jump-link href="#case-9">tt-031</a><a class=jump-link href="#case-10">tt-034</a><a class=jump-link href="#case-11">tt-035</a><a class=jump-link href="#case-12">tt-037</a><a class=jump-link href="#case-13">tt-039</a><a class=jump-link href="#case-14">tt-041</a><a class=jump-link href="#case-15">tt-044</a><a class=jump-link href="#case-16">tt-045</a><a class=jump-link href="#case-17">tt-048</a><a class=jump-link href="#case-18">tt-055</a><a class=jump-link href="#case-19">tt-056</a><a class=jump-link href="#case-20">tt-057</a><a class=jump-link href="#case-21">tt-062</a><a class=jump-link href="#case-22">tt-071</a><a class=jump-link href="#case-23">tt-073</a><a class=jump-link href="#case-24">tt-077</a><a class=jump-link href="#case-25">tt-078</a><a class=jump-link href="#case-26">tt-080</a><a class=jump-link href="#case-27">tt-081</a><a class=jump-link href="#case-28">tt-084</a><a class=jump-link href="#case-29">tt-085</a><span style="font-size:.78rem;color:#888">… 6 more</span></div><h2>Slowest and costliest</h2><div class=section-box><table><tr><th>slowest</th><th>latency</th></tr><tr><td><a href="#case-15">tt-044</a></td><td>0.00s</td></tr><tr><td><a href="#case-96">tt-096</a></td><td>0.00s</td></tr><tr><td><a href="#case-94">tt-092</a></td><td>0.00s</td></tr><tr><td><a href="#case-36">tt-001</a></td><td>0.00s</td></tr><tr><td><a href="#case-89">tt-082</a></td><td>0.00s</td></tr></table></div><h2>Results</h2><div class=case-card id="case-0"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-005</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How do I export my data?&quot;,
+  &quot;body&quot;: &quot;I&#x27;d like to export all my data to CSV format. I looked through the settings but couldn&#x27;t find the option. Is this feature available?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Data export question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-1"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-006</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Payment failed but was charged&quot;,
+  &quot;body&quot;: &quot;My subscription renewal failed with an error but I see the charge went through on my credit card. I&#x27;ve been charged but my account still shows expired. Very frustrating.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Charged but account still expired&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-2"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-007</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;API rate limit documentation&quot;,
+  &quot;body&quot;: &quot;I&#x27;m integrating your API and need to know what the rate limits are for the free tier. The documentation page seems to have broken links.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;API rate limit question, broken docs link&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;bug&#x27;, expected &#x27;how_to&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-3"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-012</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Upgrade to Enterprise plan&quot;,
+  &quot;body&quot;: &quot;We&#x27;ve grown to 50 users and need to upgrade to the Enterprise plan. Can you send me pricing information and schedule a call?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Enterprise plan upgrade inquiry&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-4"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-021</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;SSO configuration not working&quot;,
+  &quot;body&quot;: &quot;We just set up SAML SSO with our identity provider but users are getting authentication errors. We have 80 people who can&#x27;t log in now.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;SAML SSO misconfigured, 80 users blocked&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;bug&#x27;, expected &#x27;account_access&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-5"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-023</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Wrong amount charged on annual renewal&quot;,
+  &quot;body&quot;: &quot;My annual renewal charged $240 but the agreed price was $199 based on the quote I accepted. Please correct this and refund the difference.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Overcharged on annual renewal&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-6"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-027</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Duplicate charges on account&quot;,
+  &quot;body&quot;: &quot;I was charged twice for the same subscription this month. I can see two identical transactions on my bank statement from the same day.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Duplicate billing charge&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-7"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-028</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to restrict user permissions?&quot;,
+  &quot;body&quot;: &quot;I want to give some team members read-only access but I can&#x27;t find the permission settings. Can you walk me through how to set different access levels?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;User permission configuration question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-8"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-030</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;API returning 500 errors intermittently&quot;,
+  &quot;body&quot;: &quot;About 10% of our API requests are failing with 500 errors. We have automated workflows that are breaking. This started 2 hours ago.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Intermittent API 500 errors breaking workflows&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-9"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-031</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Downgrade subscription plan&quot;,
+  &quot;body&quot;: &quot;I&#x27;d like to downgrade from the Business plan to the Starter plan at the next renewal. Can you confirm the new pricing and what features I&#x27;ll lose?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Subscription downgrade inquiry&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;high&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-10"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-034</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to integrate with Zapier?&quot;,
+  &quot;body&quot;: &quot;I want to connect your platform to our CRM via Zapier. Is there a Zapier integration available, and if so, where do I find the API key?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Zapier integration question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-11"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-035</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Shared account access for contractors&quot;,
+  &quot;body&quot;: &quot;We need to give 5 contractors temporary access for a 3-month project. Can they share one seat or do we need individual licenses? What is the cost?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Contractor access and licensing question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;account_access&#x27;, expected &#x27;billing&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-12"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-037</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Charts not rendering in PDF export&quot;,
+  &quot;body&quot;: &quot;When I export a report to PDF, all the charts show as blank white boxes. The data tables export fine. This started happening after last Friday&#x27;s update.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Charts blank in PDF export&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;how_to&#x27;, expected &#x27;bug&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-13"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-039</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to use the API with Python?&quot;,
+  &quot;body&quot;: &quot;I&#x27;m new to your API and want to use it with Python. Is there an official SDK or should I use the REST endpoints directly? Any example code would be helpful.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Python API usage question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-14"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-041</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Database connection errors in production&quot;,
+  &quot;body&quot;: &quot;Our production environment is throwing database connection errors. Approximately 30% of requests are failing. We have an SLA breach if this isn&#x27;t resolved in 2 hours.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Production database errors, SLA at risk&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-15"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-044</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Attachment preview broken&quot;,
+  &quot;body&quot;: &quot;Clicking on any attachment in a record no longer shows the preview — it just shows a spinner. Downloading still works. This is affecting all file types.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Attachment preview not loading&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;high&#x27;, expected &#x27;medium&#x27;</div></div></div><div class=case-card id="case-16"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-045</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;What file formats can I import?&quot;,
+  &quot;body&quot;: &quot;I want to import existing data into the platform. What file formats are supported for import — CSV, Excel, JSON? Are there any size limits?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Supported import formats question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-17"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-048</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Emails sent from platform going to spam&quot;,
+  &quot;body&quot;: &quot;Automated emails sent from your platform are landing in our customers&#x27; spam folders. We&#x27;re using the shared sending domain. Can we set up a custom sending domain?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Outbound emails landing in spam&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;account_access&#x27;, expected &#x27;bug&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-18"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-055</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How do I export my data?&quot;,
+  &quot;body&quot;: &quot;I&#x27;d like to export all my data to CSV format. I looked through the settings but couldn&#x27;t find the option. Is this feature available? Ticket reference TT-055 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Data export question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-19"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-056</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Payment failed but was charged&quot;,
+  &quot;body&quot;: &quot;My subscription renewal failed with an error but I see the charge went through on my credit card. I&#x27;ve been charged but my account still shows expired. Very frustrating. Ticket reference TT-056 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Charged but account still expired&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-20"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-057</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;API rate limit documentation&quot;,
+  &quot;body&quot;: &quot;I&#x27;m integrating your API and need to know what the rate limits are for the free tier. The documentation page seems to have broken links. Ticket reference TT-057 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;API rate limit question, broken docs link&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;bug&#x27;, expected &#x27;how_to&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-21"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-062</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Upgrade to Enterprise plan&quot;,
+  &quot;body&quot;: &quot;We&#x27;ve grown to 50 users and need to upgrade to the Enterprise plan. Can you send me pricing information and schedule a call? Ticket reference TT-062 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Enterprise plan upgrade inquiry&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-22"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-071</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;SSO configuration not working&quot;,
+  &quot;body&quot;: &quot;We just set up SAML SSO with our identity provider but users are getting authentication errors. We have 80 people who can&#x27;t log in now. Ticket reference TT-071 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;SAML SSO misconfigured, 80 users blocked&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;bug&#x27;, expected &#x27;account_access&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-23"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-073</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Wrong amount charged on annual renewal&quot;,
+  &quot;body&quot;: &quot;My annual renewal charged $240 but the agreed price was $199 based on the quote I accepted. Please correct this and refund the difference. Ticket reference TT-073 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Overcharged on annual renewal&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-24"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-077</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Duplicate charges on account&quot;,
+  &quot;body&quot;: &quot;I was charged twice for the same subscription this month. I can see two identical transactions on my bank statement from the same day. Ticket reference TT-077 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Duplicate billing charge&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-25"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-078</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to restrict user permissions?&quot;,
+  &quot;body&quot;: &quot;I want to give some team members read-only access but I can&#x27;t find the permission settings. Can you walk me through how to set different access levels? Ticket reference TT-078 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;User permission configuration question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-26"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-080</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;API returning 500 errors intermittently&quot;,
+  &quot;body&quot;: &quot;About 10% of our API requests are failing with 500 errors. We have automated workflows that are breaking. This started 2 hours ago. Ticket reference TT-080 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Intermittent API 500 errors breaking workflows&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-27"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-081</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Downgrade subscription plan&quot;,
+  &quot;body&quot;: &quot;I&#x27;d like to downgrade from the Business plan to the Starter plan at the next renewal. Can you confirm the new pricing and what features I&#x27;ll lose? Ticket reference TT-081 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Subscription downgrade inquiry&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;high&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-28"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-084</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to integrate with Zapier?&quot;,
+  &quot;body&quot;: &quot;I want to connect your platform to our CRM via Zapier. Is there a Zapier integration available, and if so, where do I find the API key? Ticket reference TT-084 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Zapier integration question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-29"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-085</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Shared account access for contractors&quot;,
+  &quot;body&quot;: &quot;We need to give 5 contractors temporary access for a 3-month project. Can they share one seat or do we need individual licenses? What is the cost? Ticket reference TT-085 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Contractor access and licensing question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;account_access&#x27;, expected &#x27;billing&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-30"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-087</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Charts not rendering in PDF export&quot;,
+  &quot;body&quot;: &quot;When I export a report to PDF, all the charts show as blank white boxes. The data tables export fine. This started happening after last Friday&#x27;s update. Ticket reference TT-087 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Charts blank in PDF export&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;how_to&#x27;, expected &#x27;bug&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-31"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-089</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to use the API with Python?&quot;,
+  &quot;body&quot;: &quot;I&#x27;m new to your API and want to use it with Python. Is there an official SDK or should I use the REST endpoints directly? Any example code would be helpful. Ticket reference TT-089 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Python API usage question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-32"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-091</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Database connection errors in production&quot;,
+  &quot;body&quot;: &quot;Our production environment is throwing database connection errors. Approximately 30% of requests are failing. We have an SLA breach if this isn&#x27;t resolved in 2 hours. Ticket reference TT-091 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Production database errors, SLA at risk&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;high&#x27;</div></div></div><div class=case-card id="case-33"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-094</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Attachment preview broken&quot;,
+  &quot;body&quot;: &quot;Clicking on any attachment in a record no longer shows the preview — it just shows a spinner. Downloading still works. This is affecting all file types. Ticket reference TT-094 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Attachment preview not loading&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;high&#x27;, expected &#x27;medium&#x27;</div></div></div><div class=case-card id="case-34"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-095</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;What file formats can I import?&quot;,
+  &quot;body&quot;: &quot;I want to import existing data into the platform. What file formats are supported for import — CSV, Excel, JSON? Are there any size limits? Ticket reference TT-095 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Supported import formats question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;medium&#x27;, expected &#x27;low&#x27;</div></div></div><div class=case-card id="case-35"><div class=case-header><span class="badge fail">FAIL</span><span class=case-id>tt-098</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Emails sent from platform going to spam&quot;,
+  &quot;body&quot;: &quot;Automated emails sent from your platform are landing in our customers&#x27; spam folders. We&#x27;re using the shared sending domain. Can we set up a custom sending domain? Ticket reference TT-098 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Outbound emails landing in spam&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill fail" style="width:0%"></div></div><div class="score-val">0.00</div></div><div class=score-reason>got &#x27;account_access&#x27;, expected &#x27;bug&#x27;</div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-36"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-001</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Cannot login to my account&quot;,
+  &quot;body&quot;: &quot;I&#x27;ve been trying to log in for the past hour but keep getting &#x27;Invalid credentials&#x27;. I&#x27;ve reset my password twice and still can&#x27;t get in. This is urgent as I have a demo in 30 minutes.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;User locked out before demo&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-37"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-002</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Billing charge I don&#x27;t recognize&quot;,
+  &quot;body&quot;: &quot;I see a charge of $49.99 on my statement from last Tuesday. I didn&#x27;t sign up for any additional services. Please investigate and refund if this is an error.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Unrecognized charge, possible billing error&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-38"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-003</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Feature request: dark mode&quot;,
+  &quot;body&quot;: &quot;Hi, would love a dark mode option for the dashboard. It would really help with eye strain during long work sessions. Not urgent, just a suggestion!&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Dark mode feature request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-39"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-004</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;App crashes when uploading files&quot;,
+  &quot;body&quot;: &quot;Every time I try to upload a PDF larger than 5MB, the application crashes completely. I&#x27;ve tried on Chrome and Firefox, same result. I need to submit a report by end of day today.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;App crashes on large PDF upload&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-40"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-008</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Wrong email on account&quot;,
+  &quot;body&quot;: &quot;I accidentally registered with a typo in my email address and now I can&#x27;t receive verification emails. Can you help me correct the email on my account?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Typo in account email&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-41"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-009</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Data not syncing across devices&quot;,
+  &quot;body&quot;: &quot;My data on the mobile app hasn&#x27;t synced with the web version for about 3 days. I&#x27;ve logged out and back in, cleared cache. Nothing works.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Cross-device sync broken for 3 days&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-42"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-010</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Request to delete my account&quot;,
+  &quot;body&quot;: &quot;Please delete my account and all associated data as per GDPR requirements. I no longer need the service.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;GDPR account deletion request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-43"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-011</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Integration with Slack not working&quot;,
+  &quot;body&quot;: &quot;The Slack integration stopped working after your last update on Monday. I get a 403 error when trying to reconnect. Our whole team depends on this.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Slack integration broken after update&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-44"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-013</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Report generation is very slow&quot;,
+  &quot;body&quot;: &quot;Generating reports that used to take 10 seconds now takes over 5 minutes. This started about a week ago. I generate reports multiple times a day.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Report generation performance regression&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-45"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-014</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Add team member option missing&quot;,
+  &quot;body&quot;: &quot;The &#x27;Add Team Member&#x27; button is missing from the Team Settings page. I checked with a colleague who can see it on their account. I need to add 3 people today.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Add Team Member button missing&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-46"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-015</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Best practices for tagging content&quot;,
+  &quot;body&quot;: &quot;What&#x27;s the recommended way to structure tags for large content libraries? Looking for guidance on naming conventions and hierarchy.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Content tagging best practices question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-47"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-016</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Two-factor authentication setup&quot;,
+  &quot;body&quot;: &quot;I enabled 2FA but my authenticator app isn&#x27;t generating the right codes. I&#x27;ve tried multiple times and even reinstalled the app. I&#x27;m completely locked out.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;2FA misconfigured, user locked out&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-48"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-017</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Request for invoice&quot;,
+  &quot;body&quot;: &quot;I need an invoice for the payment made on November 1st for our tax records. The email receipt doesn&#x27;t have enough detail.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Invoice needed for tax records&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-49"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-018</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Notifications not working on iOS&quot;,
+  &quot;body&quot;: &quot;Push notifications stopped arriving on my iPhone about 5 days ago. Android works fine. I&#x27;ve checked all permissions and notifications are enabled.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;iOS push notifications broken&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-50"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-019</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Suggestion: keyboard shortcut for search&quot;,
+  &quot;body&quot;: &quot;It would be really convenient to have a keyboard shortcut (like Ctrl+K) to focus the search bar. Would save a lot of clicking for power users.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Keyboard shortcut for search&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-51"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-020</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Service completely down&quot;,
+  &quot;body&quot;: &quot;The entire platform is showing 503 errors. We have 200 users who can&#x27;t work. This is causing major business disruption. Please respond immediately.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Platform-wide outage affecting 200 users&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-52"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-022</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to set up webhooks?&quot;,
+  &quot;body&quot;: &quot;I&#x27;m trying to configure a webhook to notify our system when a new record is created. The documentation shows a Webhooks section but I can&#x27;t find it in my account.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Webhook setup question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-53"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-024</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Mobile app keeps crashing on launch&quot;,
+  &quot;body&quot;: &quot;After the latest update the iOS app crashes immediately on startup. I&#x27;ve reinstalled three times and it still crashes. I cannot use the product at all on mobile.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;iOS app crash on launch after update&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-54"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-025</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Suggestion: bulk import from CSV&quot;,
+  &quot;body&quot;: &quot;It would be great to be able to bulk import records from a CSV file. Right now we&#x27;re entering everything manually which takes a long time. No rush, just a thought.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Bulk CSV import request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-55"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-026</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Forgot password link not working&quot;,
+  &quot;body&quot;: &quot;I clicked &#x27;Forgot Password&#x27; but the reset email never arrived. I checked spam. I&#x27;ve tried three times over the past two hours.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Password reset emails not being delivered&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-56"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-029</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Search results returning wrong data&quot;,
+  &quot;body&quot;: &quot;When I search for records by date range, the results include records outside the range I specified. This is producing incorrect reports.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Date-range search returning incorrect results&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-57"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-032</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Feature request: custom dashboard widgets&quot;,
+  &quot;body&quot;: &quot;It would be very useful to be able to add custom widgets to the main dashboard — things like key metrics specific to our workflow. Would love to see this in a future release.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Custom dashboard widget request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-58"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-033</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Data export is missing some records&quot;,
+  &quot;body&quot;: &quot;I exported all records for Q3 but comparing to the UI count there are 47 records missing from the export file. The UI shows 1,203 but the CSV only has 1,156.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Data export missing records&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-59"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-036</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Account locked after too many login attempts&quot;,
+  &quot;body&quot;: &quot;My account got locked after I forgot my password and tried too many times. I&#x27;ve verified my email but the account is still locked.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Account locked out after failed login attempts&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-60"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-038</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Suggestion: dark mode and high contrast option&quot;,
+  &quot;body&quot;: &quot;I work long hours and would benefit from both a dark mode and a high contrast accessibility option. Many of my colleagues with visual impairments would appreciate this.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Dark mode and accessibility contrast request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-61"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-040</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Refund request — cancelled within trial&quot;,
+  &quot;body&quot;: &quot;I cancelled my subscription on day 12 of a 14-day free trial, but I was still charged the full month. I expect a full refund per your cancellation policy.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Incorrect charge after trial cancellation&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-62"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-042</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Change account owner to new employee&quot;,
+  &quot;body&quot;: &quot;Our previous account owner left the company. I need to transfer ownership to myself. I have admin access but can&#x27;t find the ownership transfer option.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Account ownership transfer request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-63"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-043</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Suggestion: saved filter presets&quot;,
+  &quot;body&quot;: &quot;I often apply the same combination of filters. Would be nice to save these as a named preset so I don&#x27;t have to reapply them every session.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Saved filter presets request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-64"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-046</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Emergency: all users getting 403 on login&quot;,
+  &quot;body&quot;: &quot;Starting 10 minutes ago, every user in our organisation is getting a 403 Forbidden error when trying to log in. We are completely locked out. This is a critical emergency.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Organisation-wide login 403, critical emergency&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-65"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-047</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Tax exemption certificate submission&quot;,
+  &quot;body&quot;: &quot;We are a non-profit and are exempt from sales tax. How do I submit our tax exemption certificate so future invoices don&#x27;t include tax?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Tax exemption setup for non-profit&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-66"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-049</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Request: audit log for user actions&quot;,
+  &quot;body&quot;: &quot;For compliance reasons we need to be able to see a full audit trail of which users changed which records and when. Is this available or on the roadmap?&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Audit log feature request for compliance&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-67"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-050</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to revoke an API key?&quot;,
+  &quot;body&quot;: &quot;One of our developers left the company and I need to revoke their API key immediately to prevent unauthorized access. I can see the key in settings but can&#x27;t find a revoke button.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;API key revocation — security concern&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-68"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-051</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Cannot login to my account&quot;,
+  &quot;body&quot;: &quot;I&#x27;ve been trying to log in for the past hour but keep getting &#x27;Invalid credentials&#x27;. I&#x27;ve reset my password twice and still can&#x27;t get in. This is urgent as I have a demo in 30 minutes. Ticket reference TT-051 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;User locked out before demo&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-69"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-052</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Billing charge I don&#x27;t recognize&quot;,
+  &quot;body&quot;: &quot;I see a charge of $49.99 on my statement from last Tuesday. I didn&#x27;t sign up for any additional services. Please investigate and refund if this is an error. Ticket reference TT-052 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Unrecognized charge, possible billing error&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-70"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-053</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Feature request: dark mode&quot;,
+  &quot;body&quot;: &quot;Hi, would love a dark mode option for the dashboard. It would really help with eye strain during long work sessions. Not urgent, just a suggestion! Ticket reference TT-053 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Dark mode feature request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-71"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-054</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;App crashes when uploading files&quot;,
+  &quot;body&quot;: &quot;Every time I try to upload a PDF larger than 5MB, the application crashes completely. I&#x27;ve tried on Chrome and Firefox, same result. I need to submit a report by end of day today. Ticket reference TT-054 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;App crashes on large PDF upload&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-72"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-058</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Wrong email on account&quot;,
+  &quot;body&quot;: &quot;I accidentally registered with a typo in my email address and now I can&#x27;t receive verification emails. Can you help me correct the email on my account? Ticket reference TT-058 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Typo in account email&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-73"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-059</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Data not syncing across devices&quot;,
+  &quot;body&quot;: &quot;My data on the mobile app hasn&#x27;t synced with the web version for about 3 days. I&#x27;ve logged out and back in, cleared cache. Nothing works. Ticket reference TT-059 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Cross-device sync broken for 3 days&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-74"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-060</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Request to delete my account&quot;,
+  &quot;body&quot;: &quot;Please delete my account and all associated data as per GDPR requirements. I no longer need the service. Ticket reference TT-060 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;GDPR account deletion request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-75"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-061</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Integration with Slack not working&quot;,
+  &quot;body&quot;: &quot;The Slack integration stopped working after your last update on Monday. I get a 403 error when trying to reconnect. Our whole team depends on this. Ticket reference TT-061 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Slack integration broken after update&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-76"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-063</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Report generation is very slow&quot;,
+  &quot;body&quot;: &quot;Generating reports that used to take 10 seconds now takes over 5 minutes. This started about a week ago. I generate reports multiple times a day. Ticket reference TT-063 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Report generation performance regression&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-77"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-064</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Add team member option missing&quot;,
+  &quot;body&quot;: &quot;The &#x27;Add Team Member&#x27; button is missing from the Team Settings page. I checked with a colleague who can see it on their account. I need to add 3 people today. Ticket reference TT-064 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Add Team Member button missing&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-78"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-065</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Best practices for tagging content&quot;,
+  &quot;body&quot;: &quot;What&#x27;s the recommended way to structure tags for large content libraries? Looking for guidance on naming conventions and hierarchy. Ticket reference TT-065 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Content tagging best practices question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-79"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-066</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Two-factor authentication setup&quot;,
+  &quot;body&quot;: &quot;I enabled 2FA but my authenticator app isn&#x27;t generating the right codes. I&#x27;ve tried multiple times and even reinstalled the app. I&#x27;m completely locked out. Ticket reference TT-066 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;2FA misconfigured, user locked out&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-80"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-067</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Request for invoice&quot;,
+  &quot;body&quot;: &quot;I need an invoice for the payment made on November 1st for our tax records. The email receipt doesn&#x27;t have enough detail. Ticket reference TT-067 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Invoice needed for tax records&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-81"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-068</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Notifications not working on iOS&quot;,
+  &quot;body&quot;: &quot;Push notifications stopped arriving on my iPhone about 5 days ago. Android works fine. I&#x27;ve checked all permissions and notifications are enabled. Ticket reference TT-068 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;iOS push notifications broken&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-82"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-069</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Suggestion: keyboard shortcut for search&quot;,
+  &quot;body&quot;: &quot;It would be really convenient to have a keyboard shortcut (like Ctrl+K) to focus the search bar. Would save a lot of clicking for power users. Ticket reference TT-069 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Keyboard shortcut for search&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-83"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-070</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Service completely down&quot;,
+  &quot;body&quot;: &quot;The entire platform is showing 503 errors. We have 200 users who can&#x27;t work. This is causing major business disruption. Please respond immediately. Ticket reference TT-070 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Platform-wide outage affecting 200 users&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-84"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-072</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to set up webhooks?&quot;,
+  &quot;body&quot;: &quot;I&#x27;m trying to configure a webhook to notify our system when a new record is created. The documentation shows a Webhooks section but I can&#x27;t find it in my account. Ticket reference TT-072 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Webhook setup question&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-85"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-074</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Mobile app keeps crashing on launch&quot;,
+  &quot;body&quot;: &quot;After the latest update the iOS app crashes immediately on startup. I&#x27;ve reinstalled three times and it still crashes. I cannot use the product at all on mobile. Ticket reference TT-074 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;iOS app crash on launch after update&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-86"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-075</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Suggestion: bulk import from CSV&quot;,
+  &quot;body&quot;: &quot;It would be great to be able to bulk import records from a CSV file. Right now we&#x27;re entering everything manually which takes a long time. No rush, just a thought. Ticket reference TT-075 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Bulk CSV import request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-87"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-076</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Forgot password link not working&quot;,
+  &quot;body&quot;: &quot;I clicked &#x27;Forgot Password&#x27; but the reset email never arrived. I checked spam. I&#x27;ve tried three times over the past two hours. Ticket reference TT-076 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Password reset emails not being delivered&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-88"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-079</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Search results returning wrong data&quot;,
+  &quot;body&quot;: &quot;When I search for records by date range, the results include records outside the range I specified. This is producing incorrect reports. Ticket reference TT-079 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Date-range search returning incorrect results&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-89"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-082</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Feature request: custom dashboard widgets&quot;,
+  &quot;body&quot;: &quot;It would be very useful to be able to add custom widgets to the main dashboard — things like key metrics specific to our workflow. Would love to see this in a future release. Ticket reference TT-082 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Custom dashboard widget request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-90"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-083</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Data export is missing some records&quot;,
+  &quot;body&quot;: &quot;I exported all records for Q3 but comparing to the UI count there are 47 records missing from the export file. The UI shows 1,203 but the CSV only has 1,156. Ticket reference TT-083 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Data export missing records&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;bug&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-91"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-086</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Account locked after too many login attempts&quot;,
+  &quot;body&quot;: &quot;My account got locked after I forgot my password and tried too many times. I&#x27;ve verified my email but the account is still locked. Ticket reference TT-086 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Account locked out after failed login attempts&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-92"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-088</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Suggestion: dark mode and high contrast option&quot;,
+  &quot;body&quot;: &quot;I work long hours and would benefit from both a dark mode and a high contrast accessibility option. Many of my colleagues with visual impairments would appreciate this. Ticket reference TT-088 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Dark mode and accessibility contrast request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-93"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-090</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Refund request — cancelled within trial&quot;,
+  &quot;body&quot;: &quot;I cancelled my subscription on day 12 of a 14-day free trial, but I was still charged the full month. I expect a full refund per your cancellation policy. Ticket reference TT-090 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Incorrect charge after trial cancellation&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-94"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-092</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Change account owner to new employee&quot;,
+  &quot;body&quot;: &quot;Our previous account owner left the company. I need to transfer ownership to myself. I have admin access but can&#x27;t find the ownership transfer option. Ticket reference TT-092 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Account ownership transfer request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-95"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-093</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Suggestion: saved filter presets&quot;,
+  &quot;body&quot;: &quot;I often apply the same combination of filters. Would be nice to save these as a named preset so I don&#x27;t have to reapply them every session. Ticket reference TT-093 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Saved filter presets request&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-96"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-096</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Emergency: all users getting 403 on login&quot;,
+  &quot;body&quot;: &quot;Starting 10 minutes ago, every user in our organisation is getting a 403 Forbidden error when trying to log in. We are completely locked out. This is a critical emergency. Ticket reference TT-096 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;Organisation-wide login 403, critical emergency&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;account_access&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-97"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-097</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Tax exemption certificate submission&quot;,
+  &quot;body&quot;: &quot;We are a non-profit and are exempt from sales tax. How do I submit our tax exemption certificate so future invoices don&#x27;t include tax? Ticket reference TT-097 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;,
+  &quot;summary&quot;: &quot;Tax exemption setup for non-profit&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;billing&quot;,
+  &quot;urgency&quot;: &quot;low&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-98"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-099</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;Request: audit log for user actions&quot;,
+  &quot;body&quot;: &quot;For compliance reasons we need to be able to see a full audit trail of which users changed which records and when. Is this available or on the roadmap? Ticket reference TT-099 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;,
+  &quot;summary&quot;: &quot;Audit log feature request for compliance&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;feature_request&quot;,
+  &quot;urgency&quot;: &quot;medium&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div><div class=case-card id="case-99"><div class=case-header><span class="badge pass">PASS</span><span class=case-id>tt-100</span><span class=case-latency>0.00s</span></div><div class=case-body><div class=field-label>input</div><pre>{
+  &quot;subject&quot;: &quot;How to revoke an API key?&quot;,
+  &quot;body&quot;: &quot;One of our developers left the company and I need to revoke their API key immediately to prevent unauthorized access. I can see the key in settings but can&#x27;t find a revoke button. Ticket reference TT-100 is included for tracking.&quot;
+}</pre><div class=field-label>expected</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;high&quot;,
+  &quot;summary&quot;: &quot;API key revocation — security concern&quot;
+}</pre><div class=field-label>output</div><pre>{
+  &quot;category&quot;: &quot;how_to&quot;,
+  &quot;urgency&quot;: &quot;high&quot;
+}</pre><div class=field-label>scores</div><div class=score-row><div class=score-name>ticket_schema</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_category</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div><div class=score-row><div class=score-name>ticket_urgency</div><div class="score-mini-bar"><div class="score-mini-fill pass" style="width:100%"></div></div><div class="score-val">1.00</div></div></div></div>
+<script>
+document.querySelectorAll('.case-header').forEach(function(h){
+  h.addEventListener('click',function(){h.closest('.case-card').classList.toggle('open')});
+});
+document.addEventListener('click',function(e){
+  var row=e.target.closest('.trace-step-row');
+  if(row) row.classList.toggle('open');
+});
+</script>
+</div>

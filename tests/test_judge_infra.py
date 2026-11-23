@@ -168,7 +168,7 @@ def test_the_manifest_records_the_judge_prompt_versions(tmp_path):
 
 # ---- dimensions and context ----
 
-def _dim_cfg(tmp_path, dims_toml, judge='[graders.judge]\ntype = "mock"', n=3, extra=""):
+def _dim_cfg(tmp_path, dims_toml, judge='[graders.judge]\ntype = "test_scripted"', n=3, extra=""):
     cases = [{"id": f"c{i}", "input": f"q{i}", "expected": f"a{i}"} for i in range(n)]
     f = write_eval(tmp_path, cases, target='type = "oracle"', graders=f'[[graders]]\ntype = "llm_judge"\nrubric = "r"\n{dims_toml}\n{judge}\n')
     f.write_text(f.read_text() + extra)
@@ -189,7 +189,7 @@ def test_dimensions_are_scored_separately_and_summarised(tmp_path, capsys):
 
 def test_a_judge_that_scores_one_dimension_low_fails_under_all_but_can_pass_under_mean(tmp_path):
     reply = json.dumps({"faithfulness": {"score": 5, "reason": "grounded"}, "correctness": {"score": 2, "reason": "wrong figure"}})
-    judge = f"[graders.judge]\ntype = \"mock\"\nreply = '{reply}'"
+    judge = f"[graders.judge]\ntype = \"test_scripted\"\nreply = '{reply}'"
     f = _dim_cfg(tmp_path, 'dimensions = ["faithfulness", "correctness"]', judge, n=1)
     s = run(load_config(f))[0][0].scores[0]
     assert not s.passed and "correctness: wrong figure" in s.reason and abs(s.value - 0.625) < 1e-9
@@ -200,11 +200,11 @@ def test_a_judge_that_scores_one_dimension_low_fails_under_all_but_can_pass_unde
 
 def test_custom_dimensions_a_panel_and_bad_replies(tmp_path):
     f = _dim_cfg(tmp_path, 'dimensions = [{name = "tone", description = "Is it calm and professional?"}]\naggregate = "majority"',
-                 '[[graders.judges]]\ntype = "mock"\n[[graders.judges]]\ntype = "mock"\n[[graders.judges]]\ntype = "mock"', n=1)
+                 '[[graders.judges]]\ntype = "test_scripted"\n[[graders.judges]]\ntype = "test_scripted"\n[[graders.judges]]\ntype = "test_scripted"', n=1)
     s = run(load_config(f))[0][0].scores[0]
-    assert s.passed and s.detail["judges"] == {"mock1": {"tone": 5}, "mock2": {"tone": 5}, "mock3": {"tone": 5}}
+    assert s.passed and s.detail["judges"] == {"test_scripted1": {"tone": 5}, "test_scripted2": {"tone": 5}, "test_scripted3": {"tone": 5}}
     bad = _dim_cfg(tmp_path / "b" if (tmp_path / "b").mkdir() is None else tmp_path, 'dimensions = ["faithfulness"]',
-                   "[graders.judge]\ntype = \"mock\"\nreply = '{\"relevance\": {\"score\": 5}}'", n=1)
+                   "[graders.judge]\ntype = \"test_scripted\"\nreply = '{\"relevance\": {\"score\": 5}}'", n=1)
     r = run(load_config(bad))[0][0]
     assert "grader error" in r.scores[0].reason and "missing dimension 'faithfulness'" in r.scores[0].reason
 

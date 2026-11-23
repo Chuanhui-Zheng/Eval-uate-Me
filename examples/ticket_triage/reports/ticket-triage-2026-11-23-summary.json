@@ -1,0 +1,44 @@
+{
+  "format_version": 1,
+  "name": "ticket-triage",
+  "cases": 100,
+  "repeats": 1,
+  "total": 100,
+  "planned": 100,
+  "incomplete": 0,
+  "passed": 64,
+  "failed": 36,
+  "errors": 0,
+  "pass_rate": 0.64,
+  "pass_rate_ci95": [
+    0.55,
+    0.73
+  ],
+  "error_rate": 0.0,
+  "cases_answered": 100,
+  "pass_rate_answered": 0.64,
+  "pass_rate_answered_ci95": [
+    0.55,
+    0.73
+  ],
+  "mean_score_by_grader": {
+    "ticket_schema": 1.0,
+    "ticket_category": 0.9,
+    "ticket_urgency": 0.72
+  },
+  "by_tag": {},
+  "failure_reasons": {
+    "failed:ticket_urgency": 28,
+    "failed:ticket_category": 10
+  },
+  "advisory_failures": {},
+  "retried": 0,
+  "usage_total": {},
+  "latency_p50_s": 2.1041996660642326e-05,
+  "latency_max_s": 8.391700976062566e-05,
+  "judge_cost_usd": 0.0,
+  "cost_usd_spent": 0.0,
+  "privacy_store": "full",
+  "split": "all",
+  "heldout_looks": 1
+}

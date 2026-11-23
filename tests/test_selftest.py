@@ -43,8 +43,8 @@ def test_selftest_flags_strict_grader(tmp_path):
 def test_selftest_catches_judge_that_always_approves(tmp_path):
     from eval_uate_me.selftest import selftest
     from eval_uate_me.graders import LLMJudge
-    good = LLMJudge(rubric="r", judge={"type": "mock"}, name="judge_ref")
-    lax = LLMJudge(rubric="r", judge={"type": "mock", "reply": '{"score": 5, "reason": "fine"}'}, name="judge_lax")
+    good = LLMJudge(rubric="r", judge={"type": "test_scripted"}, name="judge_ref")
+    lax = LLMJudge(rubric="r", judge={"type": "test_scripted", "reply": '{"score": 5, "reason": "fine"}'}, name="judge_lax")
     cases = [Case(str(i), f"q{i}", f"answer-{i}") for i in range(5)]
     rep = {v.grader: v.verdict for v in selftest(cases, [good, lax]).verdicts}
     assert rep == {"judge_ref": "ok", "judge_lax": "too_lenient"}

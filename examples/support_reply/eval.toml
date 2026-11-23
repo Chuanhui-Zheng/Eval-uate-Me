@@ -12,14 +12,17 @@ salt = "support-reply-v1"
 [selftest.oracle]
 type = "support_reply"
 
-# LLM judge: score each reply on three dimensions using the mock judge.
-# Replace [graders.judge] with a real model for actual evaluation.
+# LLM judge: score each reply on three dimensions.
+# Configure a real backend and export its API key before running this file.
 [[graders]]
 type = "llm_judge"
 name = "reply_quality"
 rubric = "You are evaluating a customer support reply. The ticket input is provided above. Score the reply."
 [graders.judge]
-type = "mock"
+type = "openai_compat"
+model = "openai/gpt-4o-mini"
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPENROUTER_API_KEY"
 
 [[graders]]
 type = "llm_judge"
@@ -35,7 +38,10 @@ description = "The reply gives the customer concrete next steps, a workaround, o
 name = "appropriate_tone"
 description = "The tone matches the urgency of the ticket. High-urgency tickets receive immediate, empathetic responses. Low-urgency tickets are helpful but not over-apologetic."
 [graders.judge]
-type = "mock"
+type = "openai_compat"
+model = "openai/gpt-4o-mini"
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPENROUTER_API_KEY"
 
 [[mutants]]
 name = "dismissive"

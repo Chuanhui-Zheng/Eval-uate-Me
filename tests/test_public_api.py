@@ -45,7 +45,7 @@ def test_cli_commands_and_builtins_only_grow():
     avail = registry.available()
     assert set(avail["targets"]) >= {"command", "echo", "http", "null", "oracle", "python"}
     assert set(avail["graders"]) >= {"contains", "exact_match", "llm_judge", "max_cost", "max_latency", "max_steps", "regex", "tool_use"}
-    assert set(avail["judges"]) >= {"anthropic", "mock", "openai_compat"}
+    assert set(avail["judges"]) >= {"anthropic", "openai_compat"}
 
 
 def test_on_disk_formats_keep_their_keys(tmp_path):

@@ -229,8 +229,8 @@ class LLMJudge(Grader):
         from .config import ConfigError
         if judge is not None and judges is not None:
             raise ConfigError("llm_judge takes either 'judge' (one) or 'judges' (a panel), not both")
-        specs = list(judges) if judges is not None else [judge or {"type": "mock"}]
-        if not specs:
+        specs = list(judges) if judges is not None else ([judge] if judge is not None else [])
+        if judges is not None and not specs:
             raise ConfigError("llm_judge 'judges' is empty: list at least one judge")
         if aggregate not in AGGREGATES:
             raise ConfigError(f"llm_judge aggregate must be one of {AGGREGATES}, got {aggregate!r}")
@@ -244,6 +244,8 @@ class LLMJudge(Grader):
             self.dimensions[nm] = desc
         if dimensions is not None and not self.dimensions:
             raise ConfigError("llm_judge 'dimensions' is empty: list at least one dimension or omit it")
+        if judge is None and judges is None:
+            raise ConfigError("llm_judge requires [graders.judge] or at least one [[graders.judges]] backend")
         self.panel = []
         for k, spec in enumerate(specs, 1):
             spec = dict(spec)

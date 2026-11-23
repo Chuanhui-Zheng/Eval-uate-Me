@@ -1,7 +1,7 @@
-"""Judge backends: anything that turns a prompt into text. Used by the llm_judge grader and by pairwise / judge-check.
+"""Judge backends: anything that turns a prompt into text.
 
-Keeping the backend behind a tiny interface means graders never import a vendor SDK, and tests can run against a deterministic
-mock. A backend implements `complete(prompt) -> str`; it may also override `complete_with_usage` to report tokens and cost, and
+The backend stays behind a tiny interface so graders never import a vendor SDK. A backend implements
+`complete(prompt) -> str`; it may also override `complete_with_usage` to report tokens and cost, and
 `cache_id` to say what makes its answers different (model, endpoint) so a cache never mixes them.
 """
 from __future__ import annotations
@@ -99,34 +99,6 @@ class CachingJudge(Judge):
 def _between(tag: str, text: str) -> str:
     m = re.search(rf"<{tag}>\n?(.*?)\n?</{tag}>", text, re.S)
     return m.group(1) if m else ""
-
-
-@register_judge("mock")
-class MockJudge(Judge):
-    """Deterministic judge for tests/offline runs. With `reply`, always returns it; otherwise scores 5 if the reference text
-    appears in the output, else 1 (for every named dimension, if the prompt asks for dimensions)."""
-    network = False
-
-    def __init__(self, reply: str | None = None):
-        self.reply = reply
-
-    def cache_id(self) -> str:
-        return "mock:" + hashlib.sha256((self.reply or "").encode("utf-8")).hexdigest()[:12]
-
-    def complete(self, prompt: str) -> str:
-        if self.reply is not None:
-            return self.reply
-        if "<response_a>" in prompt:  # pairwise: prefer the response containing the reference, else tie
-            ref = _between("reference", prompt).strip()
-            a_has, b_has = bool(ref) and ref in _between("response_a", prompt), bool(ref) and ref in _between("response_b", prompt)
-            winner = "A" if a_has and not b_has else "B" if b_has and not a_has else "tie"
-            return json.dumps({"winner": winner, "reason": "reference found in " + winner})
-        ref, out = _between("reference", prompt).strip(), _between("output", prompt)
-        ok = bool(ref) and ref in out
-        dims = re.findall(r'<dimension name="([^"]+)">', prompt)
-        if dims:
-            return json.dumps({d: {"score": 5 if ok else 1, "reason": "reference found" if ok else "reference missing"} for d in dims})
-        return json.dumps({"score": 5 if ok else 1, "reason": "reference found" if ok else "reference missing"})
 
 
 def post_json(url: str, headers: dict[str, str], body: dict[str, Any], timeout_s: float, retries: int, what: str) -> dict[str, Any]:
