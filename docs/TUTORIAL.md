@@ -27,7 +27,7 @@ answer must pass, empty and wrong answers must fail.
 
 ## 3. Run it
 ```bash tutorial
-eval_uate_me run eval.toml       # expect: 2/3 passed
+eval_uate_me offline_case eval.toml       # expect: 2/3 passed
 ```
 The sample target just echoes its input, so `known-failure` fails on purpose. Results are in `runs/<name>-<time>/`:
 `results.jsonl` (every attempt), `summary.json`, `manifest.json` (what produced them: versions, config and dataset hashes, git
@@ -64,7 +64,7 @@ Set the secret outside the file; the command does not prompt interactively:
 ```bash
 export OPENAI_API_KEY="..."
 eval_uate_me check eval.toml
-eval_uate_me run eval.toml
+eval_uate_me offline_case eval.toml
 ```
 
 Gemini can use the same backend by changing the endpoint, model and environment variable:
@@ -79,11 +79,29 @@ api_key_env = "GEMINI_API_KEY"
 
 ```bash
 export GEMINI_API_KEY="..."
-eval_uate_me run eval.toml
+eval_uate_me offline_case eval.toml
 ```
 
 Run `judge-check` before trusting a live judge; it probes repeatability, length bias, prompt-injection sensitivity and
 position bias. `selftest` remains useful for deterministic graders.
+
+## 4a. Discover candidate cases and red-team the agent
+
+For an agent you already run through an eval config, describe its purpose, tools, schemas and prompt in a discovery profile.
+The model proposes one capability suite and one adversarial suite. Each case declares whether the evidence permits a
+deterministic rule check or needs a semantic judge; the harness validates that choice and writes separate reports.
+
+```bash
+export OPENROUTER_API_KEY="..."       # or configure another compatible backend in the profile
+eval_uate_me online_case online.toml
+```
+
+Open the printed `index.html`. Review `functional/cases.jsonl` and `redteam/cases.jsonl` as generated candidates. The
+red-team failures and traces are summarized into `remediation_prompt.md`, a prompt you can hand to a coding agent; it does
+not change the target itself. Add reviewed cases to the maintained benchmark manually. The included customer-triage target
+currently records graph-node steps, not the nested ReAct tool-call messages, so this example cannot make definitive checks
+about which nested tool was called. For tool-choice assertions, extend the adapter to expose tool name and arguments in its
+trace. Hosted generation and LLM grading send the supplied agent context and test data to that provider and may incur cost.
 
 ## 5. Repeat runs, advisory checks, a seed
 A non-deterministic system needs repeated runs; a minor check should not decide pass/fail. Edit the config:
@@ -110,14 +128,14 @@ seed = 1
 
 ```bash tutorial
 eval_uate_me check eval.toml     # expect: (advisory)
-eval_uate_me run eval.toml       # expect: pass@3
+eval_uate_me offline_case eval.toml       # expect: pass@3
 ```
 With repeats the summary reports pass@1, pass@k, pass^k and the cases that flipped between attempts, and the pass rate comes with a
 95% confidence interval computed over cases.
 
 ## 6. Is a change a real improvement?
 ```bash tutorial
-eval_uate_me run eval.toml       # expect: results:
+eval_uate_me offline_case eval.toml       # expect: results:
 eval_uate_me history runs        # expect: no significant change
 ```
 `history` groups runs into series (same eval, split and dataset version) and tests the latest against the previous one.
@@ -155,11 +173,11 @@ pass_rate = 0.1
 ```
 
 ```bash tutorial
-eval_uate_me run eval.toml                       # expect: results:
+eval_uate_me offline_case eval.toml                       # expect: results:
 eval_uate_me baseline promote --config eval.toml # expect: promoted
 eval_uate_me gate eval.toml                      # expect: GATE PASSED
 ```
-Commit `eval.baseline.json`; in CI run `eval_uate_me run eval.toml && eval_uate_me gate eval.toml`. A metric the rules name but the run
+Commit `eval.baseline.json`; in CI run `eval_uate_me offline_case eval.toml && eval_uate_me gate eval.toml`. A metric the rules name but the run
 lacks fails the gate (a typo must not pass), and a different dataset or split is refused rather than compared. After a deliberate
 change of the dataset, promote a new baseline.
 
@@ -185,9 +203,9 @@ Run unknown code in a sandbox with `[run] isolation = "docker"` (see the [refere
 eval_uate_me init-plugin my_agent --dir .     # expect: created 6 files
 ```
 This writes an installable package with a target and a grader stub, an eval config, a provenance file and tests. Edit `run()` to call your system,
-`pip install -e eval_uate_me-my-agent`, and `eval_uate_me run eval_uate_me-my-agent/eval.toml`. The plugin API is in `docs/API.md`.
+`pip install -e eval_uate_me-my-agent`, and `eval_uate_me offline_case eval_uate_me-my-agent/eval.toml`. The plugin API is in `docs/API.md`.
 
 ## 11. Does your evaluation catch bad systems?
 List deliberately broken variants of your target under `[[mutants]]` and run `eval_uate_me meta-eval eval.toml`: a mutant the
 evaluation cannot tell from the real thing is a blind spot. You do not have to guess the defects: `eval_uate_me meta-eval eval.toml --auto`
-damages every field of the real outputs in turn and names the fields nothing checks. `examples/cve_triage` is a complete, worked example.
+damages every field of the real outputs in turn and names the fields nothing checks.

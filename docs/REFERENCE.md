@@ -12,14 +12,14 @@ cases.jsonl ──► Runner ──► Target (plugin) ──► output ──�
 python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 source .venv/bin/activate
 eval_uate_me init my-eval && cd my-eval      # a starter project that already runs
-eval_uate_me check eval.toml && eval_uate_me run eval.toml
+eval_uate_me check eval.toml && eval_uate_me offline_case eval.toml
 ```
 
 Or with Docker (no network needed, runs as a non-root user):
 
 ```bash
 docker build -t eval_uate_me .
-docker run --rm --network none -v "$PWD:/work" eval_uate_me run eval.toml
+docker run --rm --network none -v "$PWD:/work" eval_uate_me offline_case eval.toml
 ```
 
 Commands:
@@ -28,8 +28,9 @@ Commands:
 |---|---|
 | `init <dir>` / `init-plugin <name>` | starter project / installable plugin package (both pass `check` and refuse to overwrite files) |
 | `check <config>` | validate config, dataset and plugins in plain-language errors, without running anything |
-| `run <config> [--split dev\|heldout\|all] [--fail-under 0.9] [--max-error-rate 0.1] [--max-cost USD]` | run an eval; exit 1 if pass rate is below the threshold (CI gate) |
-| `run <config> --resume <run_dir> [--retry-errors] [--force]` | continue an interrupted or budget-truncated run, executing only the missing jobs |
+| `offline_case <config> [--split dev\|heldout\|all] [--fail-under 0.9] [--max-error-rate 0.1] [--max-cost USD]` | run a prepared eval dataset; exit 1 if pass rate is below the threshold (CI gate) |
+| `offline_case <config> --resume <run_dir> [--retry-errors] [--force]` | continue an interrupted or budget-truncated run, executing only the missing jobs |
+| `online_case <profile.toml> [--out DIR]` | ask a model to generate separate capability and red-team candidate suites, run both through the configured target, and write separate reports plus a remediation prompt |
 | `compare <baseline> <candidate>` | regressions/improvements, a paired CI and permutation p-value on the pass-rate delta, and a per-tag table with Holm-adjusted p-values |
 | `power --baseline 0.7 --delta 0.05` / `--n 40` | how many cases you need to see a difference, or what a given number of cases can detect |
 | `pairwise <run_a> <run_b> --rubric "..."` | a judge decides, case by case, which run answered better (both orders, position-debiased) |
@@ -59,17 +60,52 @@ Commands:
   Trace steps that call a tool are dicts with a `tool` key; usage goes in `TargetOutput.usage`.
 - A case passes if the target didn't error and all graders pass. A crashing target fails only its own case.
 
+## AI-assisted case discovery (`discover`)
+
+`discover` reads an agent profile, asks the configured generator for two suites, and runs each suite through the target in
+`eval_config`. Functional cases and adversarial red-team cases are saved and reported separately. Cases labeled `rules`
+must contain deterministic checks; cases labeled `llm` must contain a case-specific rubric and are judged by the configured
+judge backend. A case can combine deterministic checks with an LLM rubric: rule failures fail it immediately, while the
+judge handles the remaining open-ended behavior. The harness does not infer that a unique gold answer exists, and it does
+not treat an LLM-generated expected behavior as a trusted gold label.
+
+```bash
+eval_uate_me online_case online.toml
+# Optional: put the timestamped discovery run under another parent directory
+eval_uate_me online_case online.toml --out /tmp/agent-discovery
+```
+
+The TOML profile names an existing eval config and supplies an `[agent]` description plus optional system prompt, tools,
+input/output schemas, historical trace files, and existing cases. Inline values or paths relative to the profile are
+accepted. `[generator]` and optional `[judge]` use the same registered backend options as normal judge configuration.
+Secrets stay in environment variables; for example `api_key_env = "GEMINI_API_KEY"` works with Gemini's OpenAI-compatible
+endpoint. No interactive API-key prompt is used. The model provider receives the supplied prompt, schemas, cases and trace
+samples, so do not send data that must remain local to a hosted model.
+
+Profile counts `functional_cases` and `redteam_cases` are each 1–100 (defaults: 80 functional and 20 red-team cases). Each
+generation request asks the model for a batch containing all currently missing cases; it does not generate one case per
+request. If the model returns too few unique cases, the harness requests the missing cases up to three more times, passing
+prior cases to reduce duplicates. Malformed and duplicate proposals are skipped and replaced. Re-running with the same profile
+and agent context resumes the latest incomplete discovery run. A full run therefore makes two to eight generation calls, then one target run per generated
+case (or `run.repeats` attempts), LLM-judge calls only for cases marked `llm`, and a final remediation-prompt call. That final Markdown prompt summarizes only observed red-team failures and remains advisory; it
+does not edit the target. Generated cases are written under separate `functional/` and `redteam/` folders with JSONL input,
+analysis, summary, and HTML report. The root `index.html` links the two reports, and `discovery_manifest.json` records
+models, counts and reported usage. Run targets against a safe/staging environment when their tools can cause side effects.
+
+Supported discovery check types: `output_equals`, `output_path_equals`, `output_path_exists`, `output_contains`,
+`output_not_contains`, `output_schema` (subset: type, required, properties, enum, const, items), `required_tool`,
+`forbidden_tool`, `tool_args_equals`, `max_tool_calls`, and `max_trace_steps`. Trace checks only work if the target adapter
+actually returns tool-call steps and arguments; a trace containing only graph-node names cannot verify nested tool use.
+
 ## Documentation and stability
 
-[docs/TUTORIAL.md](TUTORIAL.md) (commands are exercised by tests), [docs/API.md](API.md) (Python API and plugins),
-[docs/VERSIONING.md](VERSIONING.md) (pre-1.0 compatibility policy), [DESIGN.md](DESIGN.md) (trade-offs and limits),
-[docs/ROADMAP.md](ROADMAP.md), and [docs/RELEASING.md](RELEASING.md).
+[docs/TUTORIAL.md](TUTORIAL.md) (step-by-step workflow), [docs/API.md](API.md) (Python API and plugins),
+[DESIGN.md](DESIGN.md) (architecture and trade-offs), and [docs/RELEASING.md](RELEASING.md) (release history and process).
 Licensed under the [MIT licence](../LICENSE).
 
-**Status:** v1.0.0 ships the worked example in `examples/cve_triage`, a public-data CVE triage reference target. The
-deterministic baseline runs offline; a live language-model agent/judge and human calibration are optional follow-up work. It is
-not published to PyPI; install from a clone. The `API_VERSION` plugin protocol number
-is independent of the product's 0.x version.
+**Status:** v1.0.8 is the latest tagged release. The current working branch includes additional AI-assisted discovery work.
+The package is not published to PyPI; install from a repository checkout or a release wheel. `API_VERSION` is the plugin
+protocol version and is independent of the package version.
 
 ## Platforms
 
@@ -144,7 +180,7 @@ cost_usd = 25                       # allowed rise versus the baseline, in perce
 ```
 
 ```bash
-eval_uate_me run eval.toml
+eval_uate_me offline_case eval.toml
 eval_uate_me baseline promote --config eval.toml   # writes <config>.baseline.json beside the config: commit it
 eval_uate_me gate eval.toml                        # later runs: exit 0 pass, 1 regression, 2 cannot decide
 ```
@@ -232,7 +268,8 @@ Each mutant runs next to the real target on the same cases. **killed** = scored 
 at least `--min-drop`); **survived** = the evaluation cannot tell it from the real thing, a blind spot to fix with a grader or
 more cases; **no-op** = it produced the real target's exact output everywhere, so it tested nothing. The report says which
 graders caught each mutant. It exits 1 if anything survived. With fewer than 6 cases nothing can reach p < 0.05.
-See `examples/cve_triage` for a full offline run, including adversarial description cases and mutation results.
+See `examples/customer_triage_eval/` for the repository's current worked agent example, including its target, graders, traces,
+saved results, and AI-assisted discovery profile.
 
 `selftest` complements it for graders: `[selftest.oracle]` names a real target that gives a perfect answer when the reference
 is a scoring spec rather than the output, and a grader can set `selftest = "guardrail"` (only the oracle is checked, because
@@ -327,8 +364,8 @@ both splits.
 ```bash
 eval_uate_me split eval.toml                              # counts per split
 eval_uate_me split eval.toml --export parts --only dev    # share dev.jsonl, keep the held-out set private
-eval_uate_me run eval.toml                                # default is dev when the dataset has splits
-eval_uate_me run eval.toml --split heldout                # the final number
+eval_uate_me offline_case eval.toml                                # default is dev when the dataset has splits
+eval_uate_me offline_case eval.toml --split heldout                # the final number
 ```
 
 A run that includes held-out cases (`heldout` or `all`) counts as a **look**; each is logged per dataset version in
@@ -350,7 +387,7 @@ eval_uate_me label disagreements runs/<run> --show-output    # the cases to lear
 ```
 
 - **Blind by default.** Automatic verdicts are hidden so reviewers are not anchored by them (`--show-verdicts` to include).
-- **Safe to open in a spreadsheet.** UTF-8 with BOM (Chinese displays correctly), long cells truncated, and cells that
+- **Safe to open in a spreadsheet.** UTF-8 with BOM (non-ASCII text displays correctly), long cells truncated, and cells that
   start with `=`, `+`, `-` or `@` get a leading `'` so output text cannot run as a formula. Only `case_id`, `attempt`,
   `human_pass`, `notes` and `labeler` are read back, so the content columns are display-only.
 - **All-or-nothing import.** The whole sheet is validated first (verdict words, unknown or reformatted case ids,
@@ -398,10 +435,10 @@ Every finished job is appended to `results.jsonl` immediately, so Ctrl-C or a cr
 `manifest.json` records `status` (`running` / `interrupted` / `incomplete` / `complete`).
 
 ```bash
-eval_uate_me run eval.toml                              # Ctrl-C part-way ...
-eval_uate_me run eval.toml --resume runs/<that-run>     # ... runs only what is missing
-eval_uate_me run eval.toml --max-cost 5                 # stop starting new jobs at $5 of usage.cost_usd
-eval_uate_me run eval.toml --resume runs/<run> --max-cost 20   # raise the budget and finish
+eval_uate_me offline_case eval.toml                              # Ctrl-C part-way ...
+eval_uate_me offline_case eval.toml --resume runs/<that-run>     # ... runs only what is missing
+eval_uate_me offline_case eval.toml --max-cost 5                 # stop starting new jobs at $5 of usage.cost_usd
+eval_uate_me offline_case eval.toml --resume runs/<run> --max-cost 20   # raise the budget and finish
 ```
 
 Resume refuses to continue if the config or dataset changed since the run began (`--force` overrides), because
@@ -453,13 +490,7 @@ Load it either by listing the module in the config (`plugins = ["my_pkg.plugin"]
 (`eval_uate_me.targets` / `eval_uate_me.graders`) in the plugin's own package. Options in the config
 (`[target]`, `[[graders]]`) are passed to the constructor as keyword arguments.
 
-`examples/cve_triage/` is a fuller public-data example: a reference CVE triage agent, NVD/CISA data, 10 graders, deliberately broken variants,
-systematic output mutation and an offline reproducible dataset. A minimal toy plugin
-(an installable package with entry points) is in `examples/plugin_demo/`:
-
-```bash
-PYTHONPATH=examples/plugin_demo eval_uate_me run examples/plugin_demo/eval.toml
-```
+The customer-support Agent source in `examples/customer_triage_eval/` is an upstream project, separate from the harness configuration.
 
 ## Output
 

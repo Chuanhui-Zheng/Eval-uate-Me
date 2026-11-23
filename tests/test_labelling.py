@@ -10,7 +10,7 @@ def test_export_is_blind_by_default_and_roundtrips_unicode(tmp_path, capsys):
     assert main(["label", "export", str(d)]) == 0
     rows = _read_sheet(d / "label_sheet.csv")
     assert [r["case_id"] for r in rows] == [f"c{i}" for i in range(6)]
-    assert rows[0]["input"] == "问题 0" and rows[0]["output"] == "问题 0"
+    assert rows[0]["input"] == "café ticket 0" and rows[0]["output"] == "café ticket 0"
     assert "auto_pass" not in rows[0] and "human_pass" in rows[0] and rows[0]["human_pass"] == ""
     assert "automatic verdicts are hidden" in capsys.readouterr().out
     assert main(["label", "export", str(d), "-o", str(d / "v.csv"), "--show-verdicts"]) == 0
@@ -70,7 +70,7 @@ def test_import_reads_verdict_words_skips_blanks_and_records_output_hash(tmp_pat
     labels = load_labels(d)
     assert labels[("c0", 0)]["ana"]["human_pass"] is True and labels[("c1", 0)]["ana"]["human_pass"] is False
     assert ("c2", 0) not in labels and labels[("c3", 0)]["ana"]["human_pass"] is True
-    assert labels[("c0", 0)]["ana"]["output_sha256"] == output_hash("问题 0")
+    assert labels[("c0", 0)]["ana"]["output_sha256"] == output_hash("café ticket 0")
 
 
 def test_import_is_all_or_nothing_with_clear_line_numbers(tmp_path, capsys):
@@ -231,7 +231,7 @@ def test_disagreements_lists_false_pass_false_fail_and_reviewer_ties(tmp_path, c
     out = capsys.readouterr().out
     assert "2 disagreement(s)" in out and "grader FAILED, humans said pass" in out
     assert "note (ana): output is fine but misses the units" in out and "exact_match: expected 'other'" in out
-    assert "output: 问题 1" in out
+    assert "output: café ticket 1" in out
 
 
 def test_disagreements_false_pass_comes_first_and_none_is_reported(tmp_path, capsys):
@@ -303,7 +303,7 @@ def test_carry_maps_to_every_repeat_with_the_same_output_and_refuses_bad_input(t
     f.write_text(f.read_text() + "repeats = 3\n")
     _, _, many = run(load_config(f))
     a = _labelled_run(tmp_path / "one" if (tmp_path / "one").mkdir() is None else tmp_path, n=1)
-    (a / "results.jsonl").write_text((a / "results.jsonl").read_text().replace("问题 0", "x"))   # same output "x" as `many`
+    (a / "results.jsonl").write_text((a / "results.jsonl").read_text().replace("café ticket 0", "x"))   # same output "x" as `many`
     rows = [json.loads(l) for l in (a / "results.jsonl").read_text().splitlines()]
     rows[0]["case"]["id"] = "c0"
     (a / "results.jsonl").write_text(json.dumps(rows[0], ensure_ascii=False) + "\n")

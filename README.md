@@ -1,98 +1,50 @@
-# eval_uate_me
+<p align="center">
+  <img src="assets/readme-banner.svg" alt="eval_uate_me — Agent Evaluation Harness" width="100%">
+</p>
 
-**Run an evaluation, gate regressions, and test whether your evaluation catches a broken agent.**
+**A practical evaluation harness for testing AI agents with repeatable cases, inspectable evidence, and regression gates.**
 
-A small, plugin-based harness for repeatable LLM-agent evaluations. Zero runtime dependencies (Python ≥ 3.11).
+`eval_uate_me` is a small, plugin-based Python framework for running an agent against a dataset, scoring its behavior with deterministic rules or an LLM judge, and reviewing the results case by case. It helps teams answer three questions: did the agent behave correctly, what evidence supports the score, and would the evaluation catch a regression?
 
-```
-cases.jsonl ──► Runner ──► Target ──► output ──► Graders ──► results + summary + gate
-```
-
-**Status:** v1.0.8 is the current stable release. Includes multi-turn tool-loop retrieval, session memory, process/Docker sandbox isolation, typed traces, interactive trace reports, and worked examples for CVE triage, classification, open-ended support replies, and a LangGraph customer-support agent. Zero runtime dependencies; deterministic examples run offline. Not published to PyPI; install from a clone or a release wheel.
-
-## The main path in three commands
-
-### 1. Run an evaluation
-
-```bash
-python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/eval_uate_me init my-eval && cd my-eval
-../.venv/bin/eval_uate_me check eval.toml
-../.venv/bin/eval_uate_me run eval.toml
+```text
+cases.jsonl → Runner → Target agent → Graders → Results, traces, reports, and regression gates
 ```
 
-`init` creates a runnable starter project (config, cases, provenance file). Point the `[target]` at your agent: use the built-in `http` or `python` type for a service or a function, or write a plugin class for anything stateful. `check` validates config and data before anything runs.
+## What it provides
 
-### 2. Gate regressions in CI
+- **Repeatable evaluations:** run the same dataset and configuration across agent versions.
+- **Flexible targets:** evaluate a Python function, HTTP service, command, or custom plugin.
+- **Mixed grading:** use exact rules for schemas, labels, and tool behavior; use an LLM judge for open-ended quality.
+- **Inspectable evidence:** keep per-case outputs, grader reasons, errors, costs, latency, and traces.
+- **Regression checks:** compare runs with a baseline and block meaningful drops in CI.
+- **Evaluation quality checks:** use mutation-based meta-evaluation to find cases where a weak grader accepts broken outputs.
+- **AI-assisted discovery:** the current main branch can generate capability and red-team candidate suites with separate reports. This feature is added in v1.0.9.
 
-```bash
-eval_uate_me run eval.toml
-eval_uate_me baseline promote --config eval.toml   # writes eval.baseline.json — commit it
-eval_uate_me gate eval.toml                        # exit 0 pass, 1 regression, 2 cannot decide
-```
+The core package has no runtime dependencies and supports Python 3.11+. Agent and model provider dependencies are installed separately for each target.
 
-The gate compares the latest run with the baseline. Add rules to the config once you have a baseline:
+## What the project does
 
-```toml
-[gate]
-significant_only = true      # fail only when the drop is statistically significant
-[gate.min]
-pass_rate = 0.90
-[gate.max_drop]
-pass_rate = 0.05
-```
+The harness evaluates AI agents against repeatable datasets and configurable target adapters. Deterministic graders check
+verifiable contracts such as schemas, labels, and tool behavior; an LLM judge scores open-ended qualities such as helpfulness
+and tone. Each run records case-level outputs, grader explanations, errors, costs, latency, and available traces. Baseline
+comparison and CI gates help detect regressions, while mutation-based meta-evaluation reveals grader blind spots.
 
-A metric the rules name but the run lacks is a failure (a typo must not silently pass). A different dataset or split is refused rather than compared. GitHub Actions gets `::error::` annotations automatically.
+The current working branch also supports AI-assisted evaluation discovery. Given an agent description and optional tools,
+schemas, system prompt, existing cases, and traces, it generates capability and red-team candidate suites, reports them
+separately, and drafts an advisory remediation prompt from observed red-team failures. Generated cases require review before
+being treated as trusted benchmark labels.
 
-### 3. Test whether the evaluation catches a broken agent (`meta-eval`)
-
-```toml
-[[mutants]]
-name = "drops-the-answer"
-[mutants.target]
-type = "my_agent"
-flaw = "omit"
-```
-
-```bash
-eval_uate_me meta-eval eval.toml           # killed / survived / no-op per mutant
-eval_uate_me meta-eval eval.toml --auto    # damage every field of the real outputs; name blind spots
-```
-
-**killed** = the evaluation scored this mutant significantly lower. **survived** = the evaluation cannot tell it from the real agent — a blind spot to fix with a better grader or more cases. `--auto` finds the blind spots you did not think to write.
-
-`examples/cve_triage/` is the primary worked example: a retrieval-loop agent over 100 public CISA KEV vulnerabilities,
-420 grouped cases, **11 graders** (schema, identity, CVSS, CWE, KEV flag, affected product, references, fabrication,
-tool-call assertion, prompt-injection resistance, safety/disclaimer), and deliberate mutants for each failure mode.
-Multi-model benchmark on the **dev split** (25 cases each): deepseek-v4.1-flash 96.7%, gpt-4o-mini 91.6%, claude-haiku-5.5 91.6% (v1.0.5 run). Held-out multi-model results not yet published.
-
-`examples/ticket_triage/` is a second worked example: 50 customer-support tickets across 5 categories and 3 urgency
-levels, **3 graders** (schema, category, urgency), and an LLM target (`eval.llm.toml`) for benchmarking real models
-alongside the deterministic oracle. Demonstrates the harness on a pure-classification task with no tool use.
-
-`examples/support_reply/` is a third worked example: 30 customer-support tickets where the agent must **draft a reply**
-rather than classify. No single correct answer exists — quality is judged by an LLM judge on three dimensions
-(addresses issue, actionable, appropriate tone). Demonstrates the harness on open-ended generation, the third evaluation
-paradigm alongside factual lookup and classification.
-
-`examples/customer_triage_eval/` evaluates a public LangGraph customer-support agent with 100 synthetic cases, a
-deterministic contract grader, an LLM judge and graph-node traces. Its README explains setup, running the evaluation and
-the limits of the sample results.
-
-## Platforms
-
-CI runs on **Linux** (Python 3.11 and 3.12), **Windows** (3.11 and 3.12) and **macOS** (3.12). Docker sandbox tests run on Linux. On Windows, `cpu_limit_s` and `memory_limit_mb` are not enforced in `process` isolation; use `docker` for hard limits.
+The repository keeps the original customer-support Agent source under `examples/customer_triage_eval/`. It is a separate upstream project, not an evaluation fixture shipped by this harness.
 
 ## Documentation
 
 | File | Contents |
 |---|---|
-| [docs/TUTORIAL.md](docs/TUTORIAL.md) | step-by-step walkthrough; every command is run by the tests |
-| [docs/REFERENCE.md](docs/REFERENCE.md) | every command, option and config key |
-| [docs/API.md](docs/API.md) | writing targets, graders and judge backends (plugin API) |
-| [docs/VERSIONING.md](docs/VERSIONING.md) | what is stable from 1.0 and what is not |
-| [docs/DESIGN.md](docs/DESIGN.md) | trade-offs and known limits |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | what shipped, what is pending |
-| [docs/RELEASING.md](docs/RELEASING.md) | how to cut a release |
+| [docs/TUTORIAL.md](docs/TUTORIAL.md) | Step-by-step guide to installing, running, grading, and gating an evaluation |
+| [docs/REFERENCE.md](docs/REFERENCE.md) | Commands, options, configuration keys, reports, and AI-assisted discovery |
+| [docs/API.md](docs/API.md) | Python API for writing targets, graders, and judge backends |
+| [docs/DESIGN.md](docs/DESIGN.md) | Architecture, design trade-offs, and known limitations |
+| [docs/RELEASING.md](docs/RELEASING.md) | Release history and instructions for preparing a release |
+| [docs/ci/eval-on-pull-request.yml](docs/ci/eval-on-pull-request.yml) | Optional GitHub Actions template for reporting evaluation regressions on pull requests |
 
-Licensed under the [MIT licence](LICENSE).
+The latest release is **v1.0.9**. The core package has no runtime dependencies and supports Python 3.11+. Licensed under the [MIT License](LICENSE).

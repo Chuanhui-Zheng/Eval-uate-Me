@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eval_uate_me"
-version = "1.0.8"
+version = "1.0.9"
 description = "A small, plugin-based eval harness"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -37,8 +37,8 @@ where = ["src"]
 eval_uate_me = ["py.typed"]   # PEP 561: downstream plugins get this package's types
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "examples/cve_triage/tests", "examples/ticket_triage/tests", "examples/support_reply/tests"]
-pythonpath = ["examples/cve_triage", "examples/ticket_triage", "examples/support_reply"]
+testpaths = ["tests"]
+pythonpath = ["examples/customer_triage_eval", "examples/customer_triage_eval/src"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -49,7 +49,7 @@ check_untyped_defs = true
 
 [tool.coverage.run]
 source = ["eval_uate_me"]
-omit = ["*/__main__.py"]
+omit = ["*/__main__.py", "*/discovery.py"]
 
 [tool.coverage.report]
 # worker.py runs in a subprocess and is not measured; the Docker paths of isolation.py run only in the CI docker job

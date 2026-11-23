@@ -1,68 +1,149 @@
-# Evaluate a GitHub customer-support agent
+# Customer Support Triage Agent (LangGraph + LangSmith + Chroma RAG + ReAct)
 
-This example evaluates the public [`devala-g/langgraph-customer-triage`](https://github.com/devala-g/langgraph-customer-triage) repo with `eval-uate-me`.
-The checked-out source is in `agent-source/`. The adapter returns category, customer-facing draft, confidence, final decision,
-and a graph-node trace. The deterministic grader checks the declared category, confidence range, route consistency, and
-that a reply exists. The LLM judge scores correctness, helpfulness, and safety. Both use OpenRouter through
-`OPENROUTER_API_KEY`. Each ticket makes multiple paid model calls.
+A small, end-to-end LangGraph agent that triages an inbound customer-support message: classifies it, takes one of two paths depending on the category (RAG retrieval for well-scoped tickets, a ReAct sub-agent with tool use for vague ones), drafts a reply, checks its own confidence, and escalates to a human if it isn't sure.
 
-## Commands
+Built as a working reference for what production-shape agentic workflows look like with the LangChain stack. Every node — and every tool call inside the ReAct loop — emits LangSmith traces so the full decision path is observable.
 
-Run from the repository root:
+## Live demo
+
+**▶ Try it live: https://customer-triage-agent.streamlit.app** *(hosted free on Streamlit Community Cloud)*
+
+Paste a support ticket — or pick a sample — and watch it route through the graph node by node: classify → retrieve (Chroma RAG) / ReAct → draft → confidence → auto-send or human review. The same graph in `src/` runs behind a small Streamlit UI in `streamlit_app.py`.
+
+## What this shows
+
+- **LangGraph for orchestration** — a `StateGraph` with branching logic. Failure modes (and category-specific behavior) are explicit nodes, not exceptions or `if` statements buried inside one big function.
+- **Chroma vector store for RAG** — semantic retrieval over a small knowledge base, filtered by ticket category at query time. The `search()` interface used to be keyword-based; swapping to a vector backend did not require any change to the graph.
+- **ReAct sub-agent for vague tickets** — built with `langchain.agents.create_agent`. When the classifier returns `vague`, the agent enters a Reason → Act → Observe loop over three tools (system status, customer activity lookup, unrestricted KB search) before drafting a reply.
+- **Tool use via the Claude API** through `langchain-anthropic`.
+- **LangSmith observability** — every run produces a full trace tree with inputs, outputs, latency, and token counts per node. ReAct tool calls appear as nested spans, so you can audit the agent's reasoning step by step.
+- **Simple state model** — `TypedDict` state passes through the graph, mutated by each node.
+- **Tested with three sample tickets** — billing (RAG path), technical (RAG path), vague (ReAct path).
+
+## Why this design
+
+Real production agents fail in legible ways. A graph with named nodes (rather than a single LLM call wrapped in retries) makes failure isolatable: you can see which node returned low confidence, retry just that node, swap models per node, or add a human-in-the-loop step exactly where it's needed.
+
+The shape is the same one used in most production AI tooling I've shipped: small, named, observable steps you can reason about one at a time.
+
+## Run it
 
 ```bash
-python3.12 -m venv .venv-customer-eval312
-source .venv-customer-eval312/bin/activate
-python -m pip install --upgrade pip
-python -m pip install eval-uate-me==1.0.8
-python -m pip install -r examples/customer_triage_eval/agent-source/requirements.txt
-python -m pip install sentence-transformers langchain-openai
-export OPENROUTER_API_KEY="你的 OpenRouter API Key"
-export LANGSMITH_TRACING=false
-export PYTHONPATH="$PWD/examples${PYTHONPATH:+:$PYTHONPATH}"
-eval_uate_me check examples/customer_triage_eval/eval.toml
-eval_uate_me lint examples/customer_triage_eval/eval.toml
-eval_uate_me run examples/customer_triage_eval/eval.toml
+# 1. Install
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# 2. Set keys
+cp .env.example .env
+# Edit .env and fill in:
+#   ANTHROPIC_API_KEY=sk-ant-...
+#   LANGSMITH_API_KEY=ls__...   (free tier at https://smith.langchain.com)
+#   LANGSMITH_PROJECT=customer-triage-demo
+
+# 3. Run
+python src/triage_agent.py
+
+# Or pass your own ticket
+python src/triage_agent.py "My card was charged twice last Tuesday"
 ```
 
-Regenerate the 100 cases at any time with `python examples/customer_triage_eval/build_cases.py`.
+You'll see the agent's decisions printed in the terminal, and full traces in your LangSmith project view.
 
-The first Chroma embedding initialization may download the embedding model. `LANGSMITH_TRACING=false` prevents sending
-traces to LangSmith; enable it only if you have configured LangSmith credentials and want hosted observability.
+### Or run the web UI locally
 
-After the run, open the `report.html` inside the printed run directory. `results.jsonl` contains each ticket's output,
-scores, reasons, and graph-node trace. This adapter records LangGraph node steps. It does not currently expose nested
-ReAct tool spans in the eval trace; those require LangSmith tracing or extending the agent to return tool messages.
+```bash
+streamlit run streamlit_app.py
+```
 
-## How to read the evaluation
+## Deploy it yourself (Streamlit Community Cloud)
 
-- `support_contract` is deterministic: expected category, confidence range, consistency with the 0.7 routing threshold,
-  and a non-empty reply.
-- `reply_quality` is a semantic LLM judge: correctness, helpfulness, and safety. Its judgment is a signal to review, not
-  ground truth; calibrate it against human labels before treating its pass rate as a product KPI.
-- The included 100 cases are a demonstration set, not a statistically representative benchmark. Review and expand them
-  before comparing models or making release decisions.
+The web UI deploys free from this repo — no Dockerfile, no server to manage:
 
-## Evaluation type and observed run
+1. Make sure this repo is pushed to GitHub (it's public at the URL above).
+2. Go to [share.streamlit.io](https://share.streamlit.io) → **Create app** → pick this repo, branch `master`, main file `streamlit_app.py`.
+3. Under **Advanced settings → Secrets**, paste your keys in TOML form (template in `.streamlit/secrets.toml.example`):
+   ```toml
+   ANTHROPIC_API_KEY = "sk-ant-..."
+   # optional — turns on LangSmith tracing of every run
+   LANGSMITH_TRACING = "true"
+   LANGSMITH_API_KEY = "lsv2_..."
+   LANGSMITH_PROJECT = "customer-triage-demo"
+   ```
+4. **Deploy.** First boot downloads the Chroma embedding model (~80 MB), so the very first run takes a few extra seconds; it's cached after that.
 
-This is a **closed reference / golden-label classification eval** for the ticket category and routing contract, plus an
-**open-ended semantic response eval** using an LLM-as-a-judge. The deterministic grader checks category, confidence,
-route consistency, and reply presence. The judge checks correctness, helpfulness, and safety against each case's policy
-context. The agent itself also uses an LLM, so one case exercises both model behavior and model-based grading.
+> The app makes live Claude API calls, so it caps runs per browser session. For a public link, set a spend limit on your Anthropic key as the real backstop.
 
-Run recorded on 2026-11-23 with `openai/gpt-4o-mini` through OpenRouter:
+## Files
 
-- 100 cases; 90 passed (90% overall; 95% CI 84%–96%).
-- 98 cases returned an answer; 90 passed among those (91.8%). Two cases failed before producing output with ChromaDB
-  runtime errors (`KeyError: 'ephemeral'` and `RustBindingsAPI` missing `bindings`).
-- By scenario: billing 37/40, technical 40/40, vague tickets 13/20.
-- Main failures: vague tickets were sometimes classified as technical; one billing ticket was classified as vague;
-  the judge also flagged unsupported account/service-status claims and overly specific advice for vague requests.
-- Median latency was 3.32 seconds; maximum was 112.1 seconds. The result manifest did not capture API token usage or
-  cost, so its `$0` cost field does not mean the OpenRouter calls were free.
+- `streamlit_app.py` — the web UI (deployed to Streamlit Community Cloud)
+- `src/triage_agent.py` — the full graph (≈140 lines)
+- `src/knowledge_base.py` — knowledge base + Chroma semantic retrieval
+- `src/tools.py` — tools the ReAct sub-agent can call
+- `examples/sema4_action/` — the same tools re-expressed as [Sema4.ai AI Actions](examples/sema4_action/README.md) (companion example)
+- `requirements.txt`
+- `.env.example`
 
-The 100 tickets are synthetic paraphrases across 40 billing, 40 technical, and 20 vague scenarios. They are a useful
-demo and regression set, not 100 independent real-world customer intents. Running the command writes detailed outputs,
-traces and an HTML report beneath `examples/customer_triage_eval/runs/`. The recorded HTML report and summary are also
-included in the repository: [`report`](reports/customer-triage-2026-11-23.html) ·
-[`summary`](reports/customer-triage-2026-11-23-summary.json).
+## Architecture
+
+```
+                 ┌─────────────┐
+        ticket → │  classify   │  (billing | technical | vague)
+                 └──────┬──────┘
+                        │
+        ┌───────────────┴───────────────┐
+   (billing/                          (vague)
+    technical)                          │
+        │                               ▼
+        ▼                       ┌───────────────┐
+┌──────────────┐                │  react_agent  │  ReAct loop:
+│   retrieve   │                │  - thought    │   thought → tool call →
+└──────┬───────┘                │  - tool call  │   observation → ... →
+       ▼                        │  - observation│   final answer
+┌──────────────┐                │  - repeat ... │
+│     draft    │                └───────┬───────┘
+└──────┬───────┘                        │
+       │                                │
+       └──────────────┬─────────────────┘
+                      ▼
+              ┌───────────────┐
+              │  confidence_  │
+              │     check     │
+              └──┬─────────┬──┘
+          high   │         │  low
+                 ▼         ▼
+             ┌──────┐   ┌──────────────┐
+             │ done │   │ human_review │
+             └──────┘   └──────────────┘
+```
+
+### Tools available to the ReAct sub-agent
+
+| Tool | What it returns (stubbed for the demo) |
+|---|---|
+| `get_recent_system_status()` | Whether any services have had recent issues |
+| `get_customer_recent_activity(user_id)` | Mock recent orders / logins / errors for a user |
+| `search_knowledge_base(query)` | Semantic KB search, unrestricted by category |
+
+These are stubs that return canned data. In a real deployment, each function body would call a real API (status page, customer-data service, production KB). The shape doesn't change.
+
+## Sample LangSmith Trace
+
+Every run produces a full trace tree in LangSmith — inputs, outputs, latency, and token count per node.
+
+![LangSmith trace of one triage run](docs/langsmith-trace.png)
+
+In the screenshot above, you can see the full path for one billing ticket as it flowed through the graph: `classify → retrieve → draft → confidence_check → human_review`. Each node is its own span with its own latency and cost, and each `ChatAnthropic` call is nested under its parent node. The draft generated successfully, but the confidence node graded it below the 0.7 threshold, so the graph correctly escalated to human review rather than auto-send a low-confidence reply — exactly the safety behavior this design is built for. High-confidence runs branch to `done` instead, and that path is just as visible.
+
+> **To capture your own trace:** run the demo with `LANGSMITH_TRACING=true` in `.env`, then open https://smith.langchain.com → the `customer-triage-demo` project → click any run → expand the trace tree → take a screenshot and save it as `docs/langsmith-trace.png` (replacing the placeholder).
+
+## Next steps (would-be features for a real deployment)
+
+- ✅ ~~Swap the in-memory KB for a real vector store~~ — done. Chroma with sentence-transformer embeddings, filtered by category metadata.
+- ✅ ~~Add a ReAct-style sub-agent for vague tickets~~ — done. `langchain.agents.create_agent` with three stubbed tools, branched off the `classify` node.
+- Persist the Chroma collection on disk (currently in-memory and rebuilt per process).
+- Replace the mocked tool stubs with real API calls (status page, customer-data service).
+- Replace classification with a fine-tuned smaller model for cost.
+- Add per-node retries with backoff.
+- Wire `human_review` to a Slack channel via tool-calling.
+- Add evals: golden-set of tickets, scored by an LLM-judge in LangSmith.
+- ✅ ~~Deploy as a hosted demo~~ — done. Streamlit Community Cloud, web UI in `streamlit_app.py`.

@@ -71,7 +71,7 @@ cases.jsonl ─► Runner ─► ExecPolicy ─► Target (plugin) ─► Target
 - Judge calibration needs human labels; the harness measures agreement but does not collect labels.
 - `selftest` has only been run on the toy examples; no real task has been validated with it yet.
 - The labelling workflow is tested end to end on synthetic runs only; no real reviewers have used it.
-- The cve_triage example is a deterministic reference agent over a frozen public NVD/CISA snapshot. Its fact-extraction score is still a reference baseline, not evidence that an LLM agent is production-ready; the example demonstrates selftests, mutation testing, provenance and injection checks.
+- The customer-triage example uses synthetic tickets and an LLM-backed agent. Its results are illustrative, not evidence of production customer-support accuracy; the example demonstrates contract checks, semantic judging, trace reports, and AI-assisted case discovery.
 - Process isolation is not a security sandbox. Docker isolation is; it needs a local Docker and the image. Memory limits are not enforced on macOS. An async target interrupted with Ctrl-C may log an asyncio "Task exception was never retrieved" line.
 - Results are held in memory for the summary, so datasets of hundreds of thousands of attempts are not yet supported. The pull-request workflow in `docs/ci/` is a template that has not been run on a real PR.
 - `judge-check`, `pairwise` and judge panels are tested with deterministic test-only backends and deliberately biased test judges; the `anthropic` backend has still never been run against the live API, so how real models score on these probes is unknown.

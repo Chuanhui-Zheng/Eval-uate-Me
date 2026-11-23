@@ -176,6 +176,14 @@ def _new_run_dir(root: Path, name: str) -> Path:
 
 
 def load_plugins(cfg: Config) -> None:
+    # A Python target's import paths may also contain its grader/plugin package.
+    # Make them available before importing configured plugins, not only later in
+    # PythonTarget.__init__, so `check` and `run` work without a manual PYTHONPATH.
+    paths = cfg.target.get("paths", [])
+    if isinstance(paths, list):
+        for path in reversed(paths):
+            if isinstance(path, str) and path and path not in sys.path:
+                sys.path.insert(0, path)
     registry.load_entry_points()
     registry.load_modules(cfg.plugins)
 

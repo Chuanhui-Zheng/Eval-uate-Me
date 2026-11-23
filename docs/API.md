@@ -1,6 +1,6 @@
 # Plugin API (version 1)
 
-Everything a plugin author needs. The stable surface is defined in [VERSIONING.md](VERSIONING.md).
+Everything a plugin author needs to extend the evaluation harness. The public API version is `eval_uate_me.API_VERSION`.
 
 ```python
 from eval_uate_me import (Case, TargetOutput, Score, Target, Grader, Judge,
@@ -15,7 +15,7 @@ result = evaluate(my_function, cases=[{"input": "2+2", "expected": "4"}, ("3+3",
                   graders=["exact_match", lambda case, out: len(out.output) < 50])
 result.pass_rate; result.failures(); result.to_rows()      # EvalResult; to_rows() is flat, ready for a DataFrame
 
-result = run_eval("eval.toml")                              # exactly what `eval_uate_me run` does; result.run_dir is the run
+result = run_eval("eval.toml")                              # exactly what `eval_uate_me offline_case` does; result.run_dir is the run
 ```
 `evaluate` works in memory (nothing is written). The target may be a function (sync or async), a `Target`, or `"module:function"`;
 cases may be `Case` objects, dicts or `(input, expected)` tuples; graders may be `Grader` objects, registered names, `(name, options)`

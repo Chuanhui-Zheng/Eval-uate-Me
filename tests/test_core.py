@@ -236,20 +236,21 @@ def test_html_report_escapes_content(tmp_path, capsys):
     assert main(["report", str(out_dir)]) == 0 and (out_dir / "report.html").exists()
 
 
-def test_demo_plugin_example_runs_and_flags_regression(tmp_path, monkeypatch, capsys):
-    import shutil
+def test_scaffolded_plugin_runs_and_flags_regression(tmp_path, monkeypatch, capsys):
     import sys
-    demo = Path(__file__).parent.parent / "examples" / "plugin_demo"
-    shutil.copytree(demo, tmp_path / "demo", ignore=shutil.ignore_patterns("runs", "__pycache__", "*.egg-info"))
-    monkeypatch.syspath_prepend(str(tmp_path / "demo"))
-    cfg_path = tmp_path / "demo" / "eval.toml"
+    assert main(["init-plugin", "regression_demo", "--dir", str(tmp_path)]) == 0
+    demo = tmp_path / "eval_uate_me-regression-demo"
+    monkeypatch.syspath_prepend(str(demo))
+    cfg_path = demo / "eval.toml"
     results, summary, good = run(load_config(cfg_path))
     outcome = {r.case.id: r.passed for r in results}
-    assert outcome["add"] and outcome["float"] and outcome["div-zero"] and not outcome["unparseable"]
-    assert summary["failure_reasons"] == {"target_error": 2}  # 1 case x 2 repeats
+    assert outcome["greeting"] and outcome["number"] and not outcome["known-failure"]
+    assert summary["pass_rate"] == 2 / 3
 
-    cfg_path.write_text(cfg_path.read_text().replace("# bug_div_zero = true", "bug_div_zero = true"))
+    # The generated grader deliberately ignores case, so `shout = true` is not
+    # a regression. Swap to a null target to make the candidate meaningfully worse.
+    cfg_path.write_text(cfg_path.read_text().replace('type = "regression_demo"', 'type = "null"'))
     _, _, bad = run(load_config(cfg_path))
     capsys.readouterr()
     assert main(["compare", str(good), str(bad)]) == 1
-    assert "div-zero" in capsys.readouterr().out
+    assert "regressions (2)" in capsys.readouterr().out

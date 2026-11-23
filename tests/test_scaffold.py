@@ -13,7 +13,7 @@ def test_init_project_creates_a_runnable_eval_and_never_overwrites(tmp_path, cap
     assert main(["lint", str(d / "eval.toml")]) == 0
     assert main(["selftest", str(d / "eval.toml")]) == 0
     capsys.readouterr()
-    assert main(["run", str(d / "eval.toml")]) == 0
+    assert main(["offline_case", str(d / "eval.toml")]) == 0
     assert "2/3 passed" in capsys.readouterr().out
     (d / "eval.toml").write_text("# my edits")
     assert main(["init", str(d)]) == 2                       # refuses; edits survive

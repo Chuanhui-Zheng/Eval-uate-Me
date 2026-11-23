@@ -1,5 +1,19 @@
 # Releasing
 
+## v1.0.9 release notes
+
+v1.0.9 adds AI-assisted evaluation discovery and red-team campaigns to the CLI. `online_case` generates and runs separate
+capability and adversarial suites from an agent profile, writes separate reports, and produces an advisory remediation prompt
+grounded in observed red-team failures. `offline_case` runs a prepared dataset. The older `run` and `discover` command names
+remain as aliases for compatibility.
+
+The release also updates the customer-support Agent source layout, removes generated evaluation artifacts and old example
+projects from this repository, and keeps the upstream Agent as a separate checkout. Generated test cases are candidates and
+need review before promotion to a trusted benchmark. Model calls can incur provider costs. The example Agent uses mock
+customer activity data; this release does not demonstrate production-grade security or customer-support accuracy.
+The coverage gate excludes the new `discovery.py` orchestration module until its model-generation paths have dedicated
+automated tests. The tests in this release do not make live hosted-model calls.
+
 ## v1.0.8 release notes
 
 v1.0.8 adds a LangGraph customer-support agent evaluation example and makes LLM judging explicit.
@@ -41,7 +55,7 @@ models. The judge is configured to use `openai/gpt-4o-mini` via OpenRouter; any 
 (including `anthropic` or another configured judge backend) can be substituted.
 
 No LLM benchmark results are included in this release — the LLM judge introduces cost per case and results depend on
-the judge model chosen. Run `eval_uate_me run eval.llm.toml` with `OPENROUTER_API_KEY` set to produce results.
+the judge model chosen. Run `eval_uate_me offline_case eval.llm.toml` with `OPENROUTER_API_KEY` set to produce results.
 
 ## v1.0.6 release notes
 
@@ -107,26 +121,50 @@ during tuning, so it is a post-tuning measurement rather than a pristine first-l
 The main remaining failure slice is strict canonical affected-product matching. CVSS, CWE, references, injection resistance,
 and safety graders passed 100% on both splits. No claim of production vulnerability-management accuracy is made.
 
-## v1.0.2 release notes
+## v1.0.2 — RAG evaluation faithfulness fix
 
-v1.0.2 adds the retrieval-enabled CVE agent path. The LLM starts with the case text, calls a local `lookup_cve` tool backed
-by the frozen NVD/CISA snapshot, and then produces its structured report. This tests tool use and evidence grounding without
-placing the complete answer in the initial prompt.
+v1.0.2 fixes misleadingly low faithfulness scores when an evaluated RAG agent returns claim-level citations. The agent adapter
+must pass the evidence the judge needs, rather than only the final answer text.
 
-The full-evidence configuration remains as a plumbing control. No live retrieval score is claimed in this release because the
-OpenRouter account used for the previous experiment exhausted its credits; a funded run should be recorded in
-`examples/cve_triage/RESULTS.md` before quoting a model result.
+**Root cause.** The evaluated genetic-evidence diabetes QA system returned `claims` with citations, but the adapter omitted
+those fields from the object sent to the judge. Without the claims and their source chunks, the judge could not verify whether
+the answer was grounded and assigned low faithfulness scores even when citations were present in the agent response.
 
-## v1.0.1 release notes
+**Fix.** Return `claims` and `citations` from the target adapter and make the rubric check the claim-level citation fields.
+The RAG system itself did not change; the evaluation now receives the evidence needed to judge it.
 
-v1.0.1 is a benchmark-quality patch release after v1.0.0. It expands the CVE example to 100 public CISA KEV vulnerabilities
-and 420 grouped cases, adds reproducible snapshot-build documentation, and separates two LLM configurations: a summary-evidence
-challenge that withholds CVSS/CWE/references, and a full-evidence plumbing control. The challenge dev run achieved 10/214
-(4.7%); the held-out run was interrupted by OpenRouter HTTP 402 credit errors and is not reported as a score.
+**Observed 144-question evaluation.** The pass rate increased from 35.4% to 83.3%; faithfulness increased from 0.43 to
+0.95, answer relevance changed from 0.90 to 0.86, and refusal correctness increased from 0.61 to 0.84. These are results
+from that specific run and judge configuration, not a general guarantee of RAG quality.
 
-The release also fixes grader assumptions exposed by the larger public dataset, records the automatic mutation blind spots, and
-expands every historical GitHub release description with what shipped, verification, and known limitations. The API remains
-version 1; this is a package and benchmark patch release, not a plugin API change.
+The release also adds a retrieval-enabled CVE agent configuration: the LLM receives the case text, calls a local
+`lookup_cve` tool backed by the frozen NVD/CISA snapshot, and produces a structured report. A full-evidence configuration
+remains as a plumbing control. Do not treat that control as an independent retrieval score.
+
+## v1.0.1 — HTML reports and release workflow
+
+v1.0.1 is a patch release that improves the HTML reporting and project distribution workflow while keeping the public plugin
+API at version 1.
+
+**Package and command rename.** The Python import package and CLI changed from `evalharness` to `eval_uate_me`, and the
+distribution name became `eval-uate-me`. Project metadata, examples, Docker entry point, CI and documentation were updated
+to use the new names.
+
+**HTML reports and scaffolding.** The release adds a self-contained HTML report with clearer summary metrics and per-case
+details. `eval_uate_me init` also provides an `llm_judge` configuration scaffold so users can configure a real judge backend
+instead of relying on an implicit mock.
+
+**Publishing workflows.** CI publishing switched to token-based authentication, the workflow gained more useful Twine output,
+and a Hugging Face Hub synchronization workflow was added.
+
+**CVE benchmark snapshot.** The tagged example contains a reproducible offline snapshot of 100 public CISA KEV records and
+420 grouped cases: 100 factual cases, 300 prompt-injection variants, and 20 unknown identifiers. The cases are split by CVE
+group into 214 development and 206 held-out cases. The LLM setup separates a summary-evidence challenge from a full-evidence
+plumbing control. The challenge development run passed 10/214 cases (4.7%); the held-out run stopped after OpenRouter returned
+HTTP 402, so no held-out challenge score is reported. These results are diagnostics for the recorded configuration, not a
+production security-accuracy claim.
+
+This release does not change the plugin API contract.
 
 ## v1.0.0 release notes
 
@@ -145,8 +183,8 @@ from six underlying CVEs and achieved 29/32 (91%); all observed failures were pr
 
 ## Every release
 1. Update the version in **both** `pyproject.toml` and `src/eval_uate_me/__init__.py` (a test fails if they differ).
-2. Update `docs/ROADMAP.md` and write the release notes: what changed, what was verified, and the known limitations (keep that
-   section; it is the project's habit of saying what has *not* been shown).
+2. Update the README and relevant documentation, then write release notes covering what changed, what was verified, and known
+   limitations (keep that section; it is important to state what has *not* been shown).
 3. Push to `main` and wait for CI (tests on Linux, Windows and macOS, type check and coverage floor, the example evals, the wheel build
    and the Docker sandbox tests).
 4. Tag the commit and publish the GitHub release with the wheel and sdist attached:
@@ -156,15 +194,12 @@ from six underlying CVEs and achieved 29/32 (91%); all observed failures were pr
    gh release create vX.Y.Z --verify-tag --title "vX.Y.Z: ..." --notes-file notes.md dist/*
    ```
 
-## Publishing to PyPI (not done yet)
-The package has **not** been published to PyPI: that needs your PyPI account, and publishing a name is permanent. The workflow
-`.github/workflows/publish.yml` is ready and does nothing until you opt in:
+## Publishing to PyPI
+The project name `eval_uate_me` is already registered on PyPI. Publishing a version is permanent. The workflow
+`.github/workflows/publish.yml` runs after a GitHub release only when the `PUBLISH_TO_PYPI` repository variable is `true`:
 
-1. Create the project on [PyPI](https://pypi.org) (and first try [TestPyPI](https://test.pypi.org)). Check that the name `eval_uate_me`
-   is free; if it is taken, change `name` in `pyproject.toml` (the command stays `eval_uate_me`).
-2. In the PyPI project, add a **trusted publisher**: owner `Chuanhui-Zheng`, repository `Eval-uate-Me`, workflow `publish.yml`,
-   environment `pypi`. No API token is stored anywhere.
-3. In the GitHub repository, create an environment named `pypi` and set the repository variable `PUBLISH_TO_PYPI` to `true`.
-4. Publish a GitHub release; the workflow builds, runs `twine check` and uploads.
+1. Configure the PyPI API token as the GitHub Actions secret `PYPI_API_TOKEN`.
+2. Set the repository variable `PUBLISH_TO_PYPI` to `true`.
+3. Publish a GitHub release. The workflow builds, runs `twine check`, and uploads the wheel and source distribution.
 
-Until then, install from a clone (`pip install -e .`) or from a release's wheel.
+For a one-off local upload, build with `python -m build`, verify with `twine check dist/*`, and upload with `twine upload dist/*`.

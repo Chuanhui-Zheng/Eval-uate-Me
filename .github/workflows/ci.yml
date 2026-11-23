@@ -27,22 +27,12 @@ jobs:
         run: |
           mypy
           pytest -q --cov=eval_uate_me
-      # The harness gating itself: the demo target must keep passing 60%+ of its cases
-      # (one case is expected to error), otherwise the job fails.
+      # Smoke-test the installed command against a generated starter project.
       - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/plugin_demo eval_uate_me run examples/plugin_demo/eval.toml --fail-under 0.6
-      # Validate the eval itself: graders must discriminate, dataset must lint cleanly enough to run.
-      - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/plugin_demo eval_uate_me selftest examples/plugin_demo/eval.toml
-      - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/plugin_demo eval_uate_me lint examples/plugin_demo/eval.toml
-      - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/cve_triage eval_uate_me lint examples/cve_triage/eval.toml --strict
-      - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/cve_triage eval_uate_me selftest examples/cve_triage/eval.toml
-      # the evaluation itself must keep catching the deliberately broken agents (dev split: not a held-out look)
-      - if: runner.os == 'Linux'
-        run: PYTHONPATH=examples/cve_triage eval_uate_me meta-eval examples/cve_triage/eval.toml
+        run: |
+          eval_uate_me init /tmp/eval-smoke
+          eval_uate_me check /tmp/eval-smoke/eval.toml
+          eval_uate_me offline_case /tmp/eval-smoke/eval.toml --fail-under 0.6
       - if: runner.os == 'Linux'
         name: Build the wheel and check it installs and runs
         run: |

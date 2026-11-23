@@ -30,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--version", action="version", version=f"eval_uate_me {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    r = sub.add_parser("run", help="run an eval from a TOML config")
+    r = sub.add_parser("offline_case", aliases=["run"], help="run a prepared eval dataset from a TOML config")
     r.add_argument("config")
     r.add_argument("--resume", metavar="RUN_DIR", default=None,
                    help="continue an interrupted run, executing only the jobs that are missing")
@@ -43,6 +43,11 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--max-cost", type=float, default=None, metavar="USD",
                    help="stop starting new jobs once this much usage.cost_usd is spent (overrides run.max_cost_usd)")
     r.add_argument("--fail-under", type=float, default=None, help="exit 1 if pass rate is below this (0-1)")
+
+    d = sub.add_parser("online_case", aliases=["discover"],
+                       help="generate and run capability and red-team suites from an agent profile")
+    d.add_argument("profile", help="TOML profile containing the target eval config and agent specifications")
+    d.add_argument("--out", default=None, help="override the profile's output_dir")
 
     i = sub.add_parser("init", help="create a starter eval project (config, sample cases, README)")
     i.add_argument("directory")
@@ -203,7 +208,12 @@ def main(argv: list[str] | None = None) -> int:
 
 def _dispatch(args) -> int:
 
-    if args.cmd == "run":
+    if args.cmd in ("online_case", "discover"):
+        from .discovery import discover, format_discovery
+        result = discover(args.profile, args.out)
+        print(format_discovery(result))
+        return 0
+    if args.cmd in ("offline_case", "run"):
         cfg = load_config(args.config)
         if args.max_cost is not None:
             cfg.max_cost_usd = args.max_cost

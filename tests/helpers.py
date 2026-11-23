@@ -128,7 +128,7 @@ def _privacy_cfg(tmp_path, privacy="store = \"scores_only\"", extra_run=""):
 
 def _labelled_run(tmp_path, n=6, privacy=""):
     """A run where case i echoes its input; odd cases fail (expected differs)."""
-    cases = [{"id": f"c{i}", "input": f"问题 {i}", "expected": f"问题 {i}" if i % 2 == 0 else "other"} for i in range(n)]
+    cases = [{"id": f"c{i}", "input": f"café ticket {i}", "expected": f"café ticket {i}" if i % 2 == 0 else "other"} for i in range(n)]
     f = write_eval(tmp_path, cases)
     if privacy:
         f.write_text(f.read_text() + privacy)

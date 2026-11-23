@@ -7,6 +7,7 @@ runs/
 runs-llm/
 runs-llm-evidence/
 .pytest_cache/
+.mypy_cache
 dist/
 build/
 .coverage

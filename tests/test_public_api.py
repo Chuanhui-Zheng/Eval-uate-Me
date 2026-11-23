@@ -1,4 +1,4 @@
-"""A snapshot of the public surface promised in docs/VERSIONING.md. If this fails you are about to make a breaking change:
+"""A snapshot of the public API surface. If this fails you are about to make a breaking change:
 either revert it, or make it deliberately (a major release, updating this file and the docs together).
 Additive changes (a new command, a new optional field) only require extending the expected values."""
 import dataclasses
@@ -39,9 +39,9 @@ def test_config_keys_only_grow():
 
 
 def test_cli_commands_and_builtins_only_grow():
-    cmds = set(re.findall(r'sub\.add_parser\("([a-z-]+)"', inspect.getsource(cli.main)))
+    cmds = set(re.findall(r'sub\.add_parser\("([a-z_-]+)"', inspect.getsource(cli.main)))
     assert cmds >= {"baseline", "gate", "calibrate", "check", "compare", "history", "init", "init-plugin", "judge-check", "label", "lint", "list",
-                    "meta-eval", "pairwise", "power", "report", "run", "selftest", "show", "split"}
+                    "meta-eval", "offline_case", "online_case", "pairwise", "power", "report", "selftest", "show", "split"}
     avail = registry.available()
     assert set(avail["targets"]) >= {"command", "echo", "http", "null", "oracle", "python"}
     assert set(avail["graders"]) >= {"contains", "exact_match", "llm_judge", "max_cost", "max_latency", "max_steps", "regex", "tool_use"}
